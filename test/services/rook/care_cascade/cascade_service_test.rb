@@ -137,20 +137,193 @@ class Rook::CareCascade::CascadeServiceTest < Minitest::Test
   # =============================================================================
 
   def test_hcv_cure_credited_on_negative_rna_after_treatment
-    cured = {
-      patient_id: "h1", site: "mobile-1", ai_an: true,
-      resources: [
-        hcv_ab(result: :pos),
-        hcv_rna(result: :pos),
-        daa_med,
-        hcv_rna(result: :neg) # SVR12 undetectable
-      ]
-    }
-    service = Rook::CareCascade::CascadeService.new(definition: Def.builtin(:hcv), patients: [ cured ])
-    report = service.report
+    cured = hcv_patient("h1", resources: [
+                          hcv_ab(result: :pos),
+                          hcv_rna(result: :pos, date: "2026-01-01"),
+                          daa_med(date: "2026-01-05"),
+                          hcv_rna(result: :neg, date: "2026-05-01") # SVR12 undetectable, >12wk later
+                        ])
+    report = hcv_report([ cured ])
 
     assert_equal 1, report.counts[:treatment_completed]
     assert_equal "h1", report.drop_off(:treatment_completed).first
+  end
+
+  # Fix 1: a negative RNA before treatment must not count as cure.
+  def test_hcv_cure_not_credited_when_negative_rna_predates_treatment
+    out_of_order = hcv_patient("h2", resources: [
+                                 hcv_rna(result: :pos, date: "2026-02-01"),
+                                 hcv_rna(result: :neg, date: "2026-01-01"), # before treatment
+                                 daa_med(date: "2026-02-05")
+                               ])
+    report = hcv_report([ out_of_order ])
+
+    assert_equal 0, report.counts[:treatment_completed]
+    assert_equal 1, report.counts[:treatment_initiated]
+  end
+
+  # Fix 1: a negative RNA inside the ~12-week SVR12 window is too early.
+  def test_hcv_cure_not_credited_when_negative_rna_is_too_early
+    too_early = hcv_patient("h3", resources: [
+                              hcv_rna(result: :pos, date: "2026-01-01"),
+                              daa_med(date: "2026-01-05"),
+                              hcv_rna(result: :neg, date: "2026-02-15") # ~6 weeks, < 12
+                            ])
+    report = hcv_report([ too_early ])
+
+    assert_equal 0, report.counts[:treatment_completed]
+  end
+
+  # Fix 1: cure fails closed when treatment has no usable date.
+  def test_hcv_cure_not_credited_when_treatment_has_no_date
+    undated = hcv_patient("h4", resources: [
+                            hcv_rna(result: :pos, date: "2026-01-01"),
+                            daa_med, # no authoredOn
+                            hcv_rna(result: :neg, date: "2026-06-01")
+                          ])
+    report = hcv_report([ undated ])
+
+    assert_equal 0, report.counts[:treatment_completed]
+    assert_equal 1, report.counts[:treatment_initiated]
+  end
+
+  # =============================================================================
+  # FHIR STATUS FILTERING (fix 2)
+  # =============================================================================
+
+  def test_cancelled_or_draft_medication_does_not_count_as_treatment
+    patient = active_syphilis_patient("s1", extra: [ medication("7982", status: "cancelled") ])
+    report = build_report(patients: [ patient ])
+
+    assert_equal 0, report.counts[:treatment_initiated]
+    assert_equal 1, report.counts[:active_infection]
+  end
+
+  def test_entered_in_error_procedure_does_not_count_as_treatment
+    proc_res = { resourceType: "Procedure", status: "entered-in-error",
+                 code: { coding: [ { system: RXNORM, code: "7982" } ] } }
+    patient = active_syphilis_patient("s2", extra: [ proc_res ])
+    report = build_report(patients: [ patient ])
+
+    assert_equal 0, report.counts[:treatment_initiated]
+  end
+
+  def test_preliminary_or_errored_observations_are_ignored
+    patient = patient("s3", site: "mobile-1", ai_an: true, resources: [
+                        syph_screen_status("20507-0", result: :pos, status: "preliminary"),
+                        observation("8041-9", result: :pos, status: "entered-in-error")
+                      ])
+    report = build_report(patients: [ patient ])
+
+    assert_equal 0, report.counts[:screened]
+    assert_equal 0, report.counts[:reactive]
+    assert_equal 0, report.counts[:active_infection]
+  end
+
+  # =============================================================================
+  # TERMINOLOGY SYSTEM MATCHING (fix 3)
+  # =============================================================================
+
+  def test_matching_code_from_wrong_system_does_not_satisfy_a_code_set
+    # 20507-0 is an RPR LOINC code; presenting it under a non-LOINC system must
+    # not count as a syphilis screen.
+    patient = patient("w1", site: "mobile-1", ai_an: true,
+                      resources: [ observation("20507-0", result: :pos, system: "http://example.org/local") ])
+    report = build_report(patients: [ patient ])
+
+    assert_equal 0, report.counts[:screened]
+  end
+
+  def test_matching_code_from_correct_system_satisfies_a_code_set
+    patient = patient("w2", site: "mobile-1", ai_an: true,
+                      resources: [ observation("20507-0", result: :pos, system: LOINC) ])
+    report = build_report(patients: [ patient ])
+
+    assert_equal 1, report.counts[:screened]
+    assert_equal 1, report.counts[:reactive]
+  end
+
+  # =============================================================================
+  # AI/AN DISAGGREGATION — MISSING/UNKNOWN (fix 4)
+  # =============================================================================
+
+  def test_missing_ai_an_is_reported_as_unknown_not_non_ai_an
+    cohort = [
+      patient("a1", site: "mobile-1", ai_an: true,  resources: [ syph_screen(result: :neg) ]),
+      patient("a2", site: "mobile-1", ai_an: false, resources: [ syph_screen(result: :neg) ]),
+      { patient_id: "a3", site: "mobile-1", resources: [ syph_screen(result: :neg) ] } # ai_an absent
+    ]
+    by_ai_an = build_report(patients: cohort).by_ai_an
+
+    assert by_ai_an.key?("unknown")
+    assert_equal 1, by_ai_an["unknown"].total
+    assert_equal 1, by_ai_an["non-AI/AN"].total
+    assert_equal 3, by_ai_an.values.sum(&:total)
+  end
+
+  def test_malformed_ai_an_value_is_treated_as_unknown
+    cohort = [ { patient_id: "a4", site: "mobile-1", ai_an: "maybe", resources: [ syph_screen(result: :neg) ] } ]
+    by_ai_an = build_report(patients: cohort).by_ai_an
+
+    assert_equal 1, by_ai_an["unknown"].total
+    refute by_ai_an.key?("non-AI/AN")
+  end
+
+  # =============================================================================
+  # CONDITION-DRIVEN ACTIVE INFECTION + IDENTITY/DEDUP (fix 5)
+  # =============================================================================
+
+  def test_active_infection_reached_via_fhir_condition
+    # No positive confirmatory Observation — the alternate Condition-driven path.
+    patient = patient("cond1", site: "mobile-1", ai_an: true, resources: [
+                        syph_screen(result: :pos),
+                        syph_confirm(result: :neg),
+                        condition("A51.0", system: "http://hl7.org/fhir/sid/icd-10-cm")
+                      ])
+    report = build_report(patients: [ patient ])
+
+    assert_equal 1, report.counts[:active_infection]
+  end
+
+  def test_resolved_condition_does_not_reach_active_infection
+    patient = patient("cond2", site: "mobile-1", ai_an: true, resources: [
+                        syph_screen(result: :pos),
+                        condition("A51.0", system: "http://hl7.org/fhir/sid/icd-10-cm", clinical: "resolved")
+                      ])
+    report = build_report(patients: [ patient ])
+
+    assert_equal 0, report.counts[:active_infection]
+    assert_equal 1, report.counts[:reactive]
+  end
+
+  def test_condition_entered_in_error_does_not_reach_active_infection
+    patient = patient("cond3", site: "mobile-1", ai_an: true, resources: [
+                        syph_screen(result: :pos),
+                        condition("A51.0", system: "http://hl7.org/fhir/sid/icd-10-cm",
+                                           verification: "entered-in-error")
+                      ])
+    report = build_report(patients: [ patient ])
+
+    assert_equal 0, report.counts[:active_infection]
+  end
+
+  def test_missing_patient_id_is_rejected_from_phi_worklists
+    assert_raises(Rook::CareCascade::PatientRecord::MissingIdentifierError) do
+      build_report(patients: [ { site: "mobile-1", ai_an: true, resources: [ syph_screen(result: :pos) ] } ])
+    end
+  end
+
+  def test_duplicate_patient_records_are_deduplicated_and_merged
+    # Same patient split across two partial pulls: screen in one, confirm in the
+    # other. Deduplication counts one patient and merges resources.
+    cohort = [
+      patient("dup1", site: "mobile-1", ai_an: true, resources: [ syph_screen(result: :pos) ]),
+      patient("dup1", site: "mobile-1", ai_an: true, resources: [ syph_confirm(result: :pos) ])
+    ]
+    report = build_report(patients: cohort)
+
+    assert_equal 1, report.total
+    assert_equal 1, report.counts[:active_infection] # merged screen + confirm
   end
 
   # =============================================================================
@@ -224,36 +397,72 @@ class Rook::CareCascade::CascadeServiceTest < Minitest::Test
     { patient_id: id, site: site, ai_an: ai_an, resources: resources }
   end
 
+  # An active-infection syphilis patient (screened+, confirmed+), plus any
+  # +extra+ resources under test.
+  def active_syphilis_patient(id, extra: [])
+    patient(id, site: "mobile-1", ai_an: true,
+                resources: [ syph_screen(result: :pos), syph_confirm(result: :pos) ] + extra)
+  end
+
+  def hcv_patient(id, resources:)
+    { patient_id: id, site: "mobile-1", ai_an: true, resources: resources }
+  end
+
+  def hcv_report(patients)
+    Rook::CareCascade::CascadeService.new(definition: Def.builtin(:hcv), patients: patients).report
+  end
+
+  def syph_screen_status(code, result:, status:)
+    observation(code, result: result, status: status)
+  end
+
   # --- FHIR resource builders --------------------------------------------------
 
-  def observation(code, result:)
+  LOINC  = "http://loinc.org"
+  RXNORM = "http://www.nlm.nih.gov/research/umls/rxnorm"
+
+  def observation(code, result:, status: "final", date: nil, system: LOINC)
     interp = { pos: "POS", neg: "NEG" }.fetch(result)
-    {
+    obs = {
       resourceType: "Observation",
-      status: "final",
-      code: { coding: [ { system: "http://loinc.org", code: code } ] },
+      status: status,
+      code: { coding: [ { system: system, code: code } ] },
       interpretation: [ { coding: [ { code: interp } ] } ]
     }
+    obs[:effectiveDateTime] = date if date
+    obs
   end
 
   def syph_screen(result:)      = observation("20507-0", result: result)   # RPR
   def syph_confirm(result:)     = observation("8041-9", result: result)    # TP-PA
   def hcv_ab(result:)           = observation("13955-0", result: result)   # HCV Ab
-  def hcv_rna(result:)          = observation("11259-9", result: result)   # HCV RNA
+  def hcv_rna(result:, status: "final", date: nil) = observation("11259-9", result: result, status: status, date: date)
 
   def pcn_med
     medication("7982") # penicillin G benzathine
   end
 
-  def daa_med
-    medication("1734340") # DAA regimen
+  def daa_med(status: "active", date: nil)
+    medication("1734340", status: status, date: date) # DAA regimen
   end
 
-  def medication(code)
-    {
+  def medication(code, status: "active", date: nil, system: RXNORM)
+    med = {
       resourceType: "MedicationRequest",
-      status: "active",
-      medicationCodeableConcept: { coding: [ { system: "http://www.nlm.nih.gov/research/umls/rxnorm", code: code } ] }
+      status: status,
+      medicationCodeableConcept: { coding: [ { system: system, code: code } ] }
     }
+    med[:authoredOn] = date if date
+    med
+  end
+
+  def condition(code, system:, clinical: "active", verification: nil)
+    cond = {
+      resourceType: "Condition",
+      code: { coding: [ { system: system, code: code } ] },
+      clinicalStatus: { coding: [ { code: clinical } ] }
+    }
+    cond[:verificationStatus] = { coding: [ { code: verification } ] } if verification
+    cond
   end
 end

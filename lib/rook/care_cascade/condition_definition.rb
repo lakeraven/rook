@@ -26,6 +26,17 @@ module Rook
 
       SOURCES = %i[ruby_matchers cql].freeze
 
+      # Canonical terminology system URIs. Code sets pair every code with its
+      # system so an identical code in an unrelated terminology never matches.
+      LOINC   = "http://loinc.org"
+      RXNORM  = "http://www.nlm.nih.gov/research/umls/rxnorm"
+      ICD10CM = "http://hl7.org/fhir/sid/icd-10-cm"
+      SNOMED  = "http://snomed.info/sct"
+
+      # SVR12: cure requires an undetectable RNA at least ~12 weeks after
+      # treatment. Expressed in days for date arithmetic.
+      SVR12_MIN_DAYS = 12 * 7
+
       attr_reader :key, :name, :source, :stages, :matchers, :code_sets
 
       # @param stages [Array<Stage>] ordered from entry to terminal
@@ -88,10 +99,10 @@ module Rook
       # RxNorm). Hosts can override by constructing their own definition.
       def self.syphilis
         code_sets = {
-          screening: %w[20507-0 11084-1 5292-8 22587-0], # RPR / reagin / treponemal Ab (LOINC)
-          confirmation: %w[8041-9 24312-8 47237-7],      # TP-PA / FTA-ABS (LOINC)
-          active_condition: %w[A51 A51.0 A52 A53 A53.9 76272004], # ICD-10-CM / SNOMED
-          treatment: %w[7982 1596450 1659149]            # penicillin G benzathine (RxNorm)
+          screening: coded(LOINC, %w[20507-0 11084-1 5292-8 22587-0]), # RPR / reagin / treponemal Ab
+          confirmation: coded(LOINC, %w[8041-9 24312-8 47237-7]),      # TP-PA / FTA-ABS
+          active_condition: coded(ICD10CM, %w[A51 A51.0 A52 A53 A53.9]) + coded(SNOMED, %w[76272004]),
+          treatment: coded(RXNORM, %w[7982 1596450 1659149])           # penicillin G benzathine
         }
         from_code_sets(key: :syphilis, name: "Syphilis", code_sets: code_sets)
       end
@@ -101,13 +112,18 @@ module Rook
       # cure (SVR12: undetectable RNA after treatment).
       def self.hcv
         code_sets = {
-          screening: %w[13955-0 16128-1 5199-5],          # HCV antibody (LOINC)
-          confirmation: %w[11259-9 20416-4 38180-6],      # HCV RNA (LOINC)
-          active_condition: %w[B18.2 B17.10 B17.11 50711007], # chronic/acute HCV (ICD-10-CM / SNOMED)
-          treatment: %w[1734340 1926906 2003754],         # DAA regimens (RxNorm)
-          completion: %w[11259-9 20416-4 38180-6]         # SVR12 = undetectable RNA (same RNA assays)
+          screening: coded(LOINC, %w[13955-0 16128-1 5199-5]),         # HCV antibody
+          confirmation: coded(LOINC, %w[11259-9 20416-4 38180-6]),     # HCV RNA
+          active_condition: coded(ICD10CM, %w[B18.2 B17.10 B17.11]) + coded(SNOMED, %w[50711007]),
+          treatment: coded(RXNORM, %w[1734340 1926906 2003754]),       # DAA regimens
+          completion: coded(LOINC, %w[11259-9 20416-4 38180-6])        # SVR12 = undetectable RNA (same RNA assays)
         }
         from_code_sets(key: :hcv, name: "Hepatitis C", code_sets: code_sets)
+      end
+
+      # Pair a list of raw codes with a terminology +system+ URI.
+      def self.coded(system, codes)
+        codes.map { |code| { system: system, code: code } }
       end
 
       # Build the standard six-stage screening-to-treatment cascade from code
@@ -148,15 +164,21 @@ module Rook
         new(key: key, name: name, stages: stages, matchers: matchers, code_sets: code_sets)
       end
 
-      # Cure is only credited to patients who were actually treated, evidenced
-      # by a subsequent negative confirmatory assay (e.g. HCV SVR12). Without a
-      # completion code set the terminal stage is never reached.
+      # Cure is only credited to patients who were actually treated AND have a
+      # negative confirmatory assay drawn at least SVR12_MIN_DAYS (~12 weeks)
+      # after the treatment date (e.g. HCV SVR12). A negative result that
+      # pre-dates treatment, falls inside the window, or has no usable date does
+      # not count. Without a completion code set the terminal stage is never
+      # reached, and a treatment with no recorded date fails closed.
       def self.completion_matcher(treatment, completion)
         return ->(_pr) { false } if completion.nil? || completion.empty?
 
         lambda do |pr|
-          treated = pr.medication_present?(treatment) || pr.procedure_present?(treatment)
-          treated && pr.negative_observation?(completion)
+          treatment_time = pr.latest_treatment_time(treatment)
+          next false unless treatment_time
+
+          svr12_earliest = treatment_time + (SVR12_MIN_DAYS * 24 * 60 * 60)
+          pr.negative_observation_after?(completion, svr12_earliest)
         end
       end
 

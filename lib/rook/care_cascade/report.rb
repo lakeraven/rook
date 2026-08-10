@@ -111,11 +111,11 @@ module Rook
       end
 
       def by_ai_an
-        subreports { |c| c[:ai_an] ? "AI/AN" : "non-AI/AN" }
+        subreports { |c| ai_an_label(c[:ai_an]) }
       end
 
       def by_site_and_ai_an
-        subreports { |c| [ c[:site], c[:ai_an] ? "AI/AN" : "non-AI/AN" ] }
+        subreports { |c| [ c[:site], ai_an_label(c[:ai_an]) ] }
       end
 
       # Aggregate figures only (no patient ids) — safe for dashboards/summary.
@@ -160,6 +160,17 @@ module Rook
       end
 
       private
+
+      # AI/AN status is tri-state: missing/unknown is preserved as its own
+      # category rather than collapsed into "non-AI/AN" (which would bias grant
+      # disaggregation).
+      def ai_an_label(value)
+        case value
+        when true then "AI/AN"
+        when false then "non-AI/AN"
+        else "unknown"
+        end
+      end
 
       def grant_slice(report)
         {

@@ -49,7 +49,16 @@ module Rook
 
       def patient_records
         raw = @patients.respond_to?(:call) ? @patients.call : @patients
-        Array(raw).map { |r| PatientRecord.wrap(r) }
+        deduplicate(Array(raw).map { |r| PatientRecord.wrap(r) })
+      end
+
+      # A patient may appear more than once (e.g. two partial FHIR pulls). Fold
+      # duplicates sharing a +patient_id+ into a single record by merging their
+      # resources, so aggregates count each patient exactly once.
+      def deduplicate(records)
+        records.group_by(&:patient_id).values.map do |group|
+          group.reduce { |merged, record| merged.merge(record) }
+        end
       end
     end
   end
