@@ -1,0 +1,6 @@
+name: CI
+on: { pull_request: {}, push: { branches: [ main ] } }
+jobs:
+  ci:
+    uses: lakeraven/.github/.github/workflows/rails-ci.yml@main
+    with: { ruby_version: "4.0.6", test_cmd: "bundle exec rake test", run_brakeman: false }
