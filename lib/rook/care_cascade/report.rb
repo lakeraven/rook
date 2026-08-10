@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "rook/care_cascade/small_cell_suppressor"
+
 module Rook
   module CareCascade
     # Computed screening-to-treatment cascade for one condition over a cohort.
@@ -23,7 +25,7 @@ module Rook
       # standard). See #to_grant_report.
       DEFAULT_MIN_CELL_SIZE = 11
       # Sentinel written in place of a redacted small cell (never the number).
-      SUPPRESSED = :suppressed
+      SUPPRESSED = SmallCellSuppressor::SUPPRESSED
 
       attr_reader :definition, :classifications
 
@@ -124,7 +126,11 @@ module Rook
         subreports { |c| [ c[:site], ai_an_label(c[:ai_an]) ] }
       end
 
-      # Aggregate figures only (no patient ids) — safe for dashboards/summary.
+      # Internal/PHI aggregate: EXACT counts and rates, no patient ids and NO
+      # small-cell suppression. This is NOT a shareable surface — it feeds #to_h
+      # (the PHI outreach report) and builds the disaggregation sub-reports. The
+      # ONLY funder-facing / shareable surface is #to_grant_report, which applies
+      # complementary small-cell suppression. Do not emit summary_h externally.
       def summary_h
         {
           condition: { key: condition_key, name: condition_name },
@@ -151,51 +157,60 @@ module Rook
       # RHTP). Aggregate counts and conversion rates, disaggregated by site and
       # AI/AN status. No patient-level data.
       #
-      # === Small-cell suppression (PHI re-identification safeguard)
+      # === Complementary small-cell suppression (PHI re-identification safeguard, rook#51)
       # Bare counts can re-identify people in a small street-medicine cohort: a
       # cell like {site, AI/AN, treatment_completed: 1} names an individual with
-      # no id present. Every count/cohort_size below +min_cell_size+ (default 11,
-      # the HHS/CMS standard) is redacted to +:suppressed+ — the sentinel, NOT
-      # the exact small number — across the whole-cohort cascade/drop_off AND
-      # every disaggregation slice (by_site, by_ai_an, and especially the
-      # by_site_and_ai_an cross-tab). A conversion rate is suppressed whenever
-      # either endpoint count is small (a rate over n=1-2 is equally disclosive).
+      # no id present. Every count below +min_cell_size+ (default 11, the HHS/CMS
+      # standard) is redacted to +:suppressed+ — the sentinel, NOT the number —
+      # and then COMPLEMENTARY suppression closes margin arithmetic: whenever a
+      # row/column/whole-cohort total or the telescoping cascade<->drop_off
+      # identity would leave a single suppressed cell recoverable by subtraction,
+      # the next-smallest cell in that relation is suppressed too (iterated to a
+      # fixpoint). No suppressed count is recoverable by single-equation
+      # subtraction across any margin or the by_site_and_ai_an cross-tab. A
+      # conversion rate is suppressed whenever either endpoint count is
+      # suppressed.
       #
-      # This is a SAFEGUARD, not a de-identification certification. Only PRIMARY
-      # (single-cell) suppression is applied; a residual margin-arithmetic risk
-      # remains — when exactly one cell in a row/column is suppressed, the margin
-      # can let it be back-computed (complementary suppression is deferred, see
-      # rook follow-up). Tribal-data release still requires Expert Determination
-      # per Lakeraven policy; Safe Harbor / bare counts are insufficient.
+      # This closes single-equation recovery; it is a SAFEGUARD, not a
+      # de-identification certification (a determined adversary combining many
+      # equations is out of scope here). Tribal-data release still requires
+      # Expert Determination per Lakeraven policy; Safe Harbor / bare counts are
+      # insufficient. See SmallCellSuppressor for the algorithm and trade-offs.
       def to_grant_report(period: nil, program: nil, min_cell_size: DEFAULT_MIN_CELL_SIZE)
+        body = raw_grant_body
+        SmallCellSuppressor.new(min_cell_size).suppress!(body, stage_keys: definition.stage_keys)
         {
           program: program,
           condition: { key: condition_key, name: condition_name },
           reporting_period: period,
-          min_cell_size: min_cell_size,
-          cohort_size: suppress_count(total, min_cell_size),
-          cascade: suppress_counts(counts, min_cell_size),
-          drop_off: suppress_counts(reached_exactly_counts, min_cell_size),
-          conversion_rates: suppress_conversions(min_cell_size),
-          disaggregation: {
-            by_site: by_site.transform_values { |r| r.grant_slice(min_cell_size) },
-            by_ai_an: by_ai_an.transform_values { |r| r.grant_slice(min_cell_size) },
-            by_site_and_ai_an: by_site_and_ai_an.transform_values { |r| r.grant_slice(min_cell_size) }
-          }
-        }
+          min_cell_size: min_cell_size
+        }.merge(body)
       end
 
-      # A single disaggregation slice, counts-only and small-cell suppressed.
-      # Public so parent reports can build slices from their sub-reports.
-      def grant_slice(min_cell_size = DEFAULT_MIN_CELL_SIZE)
-        {
-          cohort_size: suppress_count(total, min_cell_size),
-          cascade: suppress_counts(counts, min_cell_size),
-          conversion_rates: suppress_conversions(min_cell_size)
-        }
+      # A single raw disaggregation slice (counts and rates, no ids). Public so a
+      # parent report can build slices from its sub-reports; suppression is
+      # applied centrally by SmallCellSuppressor over the assembled report.
+      def grant_slice
+        { cohort_size: total, cascade: counts, conversion_rates: conversions }
       end
 
       private
+
+      # Assembled but UNSUPPRESSED grant structure — SmallCellSuppressor mutates
+      # it in place so complementary suppression can see every margin at once.
+      def raw_grant_body
+        {
+          cohort_size: total,
+          cascade: counts,
+          drop_off: reached_exactly_counts,
+          conversion_rates: conversions,
+          disaggregation: {
+            by_site: by_site.transform_values(&:grant_slice),
+            by_ai_an: by_ai_an.transform_values(&:grant_slice),
+            by_site_and_ai_an: by_site_and_ai_an.transform_values(&:grant_slice)
+          }
+        }
+      end
 
       # AI/AN status is tri-state: missing/unknown is preserved as its own
       # category rather than collapsed into "non-AI/AN" (which would bias grant
@@ -205,36 +220,6 @@ module Rook
         when true then "AI/AN"
         when false then "non-AI/AN"
         else "unknown"
-        end
-      end
-
-      # ---- Small-cell suppression ------------------------------------------
-
-      # A count is disclosive (must be redacted) when it names 1..N-1 people.
-      # Zero is not disclosive (nobody to re-identify) and passes through.
-      def cell_suppressed?(count, min)
-        count.is_a?(Integer) && count.positive? && count < min
-      end
-
-      def suppress_count(count, min)
-        cell_suppressed?(count, min) ? SUPPRESSED : count
-      end
-
-      def suppress_counts(counts_hash, min)
-        counts_hash.transform_values { |v| suppress_count(v, min) }
-      end
-
-      # Suppress a conversion rate when either endpoint count is small: a small
-      # denominator (rate over n=1-2) or a small numerator (back-computable to
-      # the exact reached count) is disclosive. Zero-denominator rates stay nil
-      # (undefined), matching #conversions.
-      def suppress_conversions(min)
-        c = counts
-        rates = conversions
-        definition.stages.each_cons(2).each_with_object({}) do |(from, to), acc|
-          key = "#{from.key}_to_#{to.key}"
-          disclosive = cell_suppressed?(c[from.key], min) || cell_suppressed?(c[to.key], min)
-          acc[key] = disclosive ? SUPPRESSED : rates[key]
         end
       end
 

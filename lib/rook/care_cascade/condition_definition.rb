@@ -133,7 +133,8 @@ module Rook
       #   reactive               screening assay positive/reactive
       #   confirmation_completed confirmatory assay performed (any result)
       #   active_infection       confirmatory positive OR active Condition
-      #   treatment_initiated    treatment medication (or procedure) recorded
+      #   treatment_initiated    treatment administered/dispensed/taken (or a
+      #                          procedure) — a bare medication ORDER does not count
       #   treatment_completed    cure marker (negative confirmatory assay
       #                          post-treatment) — omitted if no code set given
       def self.from_code_sets(key:, name:, code_sets:)
@@ -157,7 +158,7 @@ module Rook
           reactive: ->(pr) { pr.positive_observation?(screening) },
           confirmation_completed: ->(pr) { pr.observation_present?(confirmation) },
           active_infection: ->(pr) { pr.positive_observation?(confirmation) || pr.condition_present?(active) },
-          treatment_initiated: ->(pr) { pr.medication_present?(treatment) || pr.procedure_present?(treatment) },
+          treatment_initiated: ->(pr) { pr.medication_administered?(treatment) || pr.procedure_present?(treatment) },
           treatment_completed: completion_matcher(treatment, completion)
         }
 

@@ -165,12 +165,11 @@ class Rook::CareCascade::CascadeServiceTest < Minitest::Test
   def test_grant_report_suppresses_small_cells_and_passes_large_cells
     grant = build_report(patients: suppression_cohort).to_grant_report
 
-    # Whole-cohort large cells pass through unchanged.
+    # Whole-cohort grand totals pass through unchanged.
     assert_equal 15, grant[:cohort_size]
     assert_equal 15, grant[:cascade][:screened]
-    assert_equal 12, grant[:disaggregation][:by_site]["mobile-1"][:cohort_size]
 
-    # Small single-axis slice is redacted to the sentinel (not the exact number).
+    # The small slice is redacted to the sentinel (not the exact number)...
     assert_equal :suppressed, grant[:disaggregation][:by_site]["mobile-2"][:cohort_size]
 
     # Small cross-tab cell — the sharpest re-identification risk — is suppressed.
@@ -181,26 +180,72 @@ class Rook::CareCascade::CascadeServiceTest < Minitest::Test
     refute_includes grant.to_s, "m2_1" # no ids anywhere
   end
 
-  def test_grant_report_suppresses_conversion_rate_with_small_denominator
+  # rook#51: complementary suppression — a lone suppressed cell must not be
+  # recoverable by subtracting the other cells from an unsuppressed margin.
+  def test_suppressed_cells_are_not_recoverable_by_margin_subtraction
+    grant = build_report(patients: suppression_cohort).to_grant_report
+    by_site = grant[:disaggregation][:by_site]
+    by_ai_an = grant[:disaggregation][:by_ai_an]
+
+    # by_site: mobile-2 (n=3) is small; mobile-2 = cohort_size - mobile-1 would
+    # recover it, so mobile-1 (n=12) is suppressed as its complement.
+    assert_equal :suppressed, by_site["mobile-2"][:cohort_size]
+    assert_equal :suppressed, by_site["mobile-1"][:cohort_size]
+
+    # Same on the AI/AN margin and the screened cascade row.
+    assert_equal :suppressed, by_ai_an["AI/AN"][:cohort_size]
+    assert_equal :suppressed, by_ai_an["non-AI/AN"][:cohort_size]
+    assert_equal :suppressed, by_site["mobile-1"][:cascade][:screened]
+
+    # No single-equation subtraction across any margin recovers a value.
+    published_sites = by_site.values.map { |s| s[:cohort_size] }.reject { |v| v == :suppressed }
+    assert_empty published_sites, "no site cohort_size may remain to back out the other"
+  end
+
+  def test_grant_report_suppresses_conversion_rate_when_endpoint_is_suppressed
     grant = build_report(patients: suppression_cohort).to_grant_report
 
     small = grant[:disaggregation][:by_site]["mobile-2"] # n=3 denominator
     assert_equal :suppressed, small[:conversion_rates]["screened_to_reactive"]
 
-    large = grant[:disaggregation][:by_site]["mobile-1"] # n=12 denominator
-    assert_equal 0.0, large[:conversion_rates]["screened_to_reactive"]
+    # mobile-1's screened count is suppressed as a complement, so its rate goes
+    # too. The whole-cohort rate (denominator 15, numerator 0) still passes.
+    large = grant[:disaggregation][:by_site]["mobile-1"]
+    assert_equal :suppressed, large[:conversion_rates]["screened_to_reactive"]
+    assert_equal 0.0, grant[:conversion_rates]["screened_to_reactive"]
   end
 
   def test_top_level_rare_stage_count_is_suppressed
     # 12 screened-negative + 1 reactive -> reactive stage count of 1 is exposed
     # unless suppressed at the whole-cohort level.
-    cohort = (1..12).map { |i| patient("s#{i}", site: "mobile-1", ai_an: false, resources: [ syph_screen(result: :neg) ]) }
-    cohort << patient("rare", site: "mobile-1", ai_an: false, resources: [ syph_screen(result: :pos) ])
-    grant = build_report(patients: cohort).to_grant_report
+    grant = build_report(patients: rare_reactive_cohort).to_grant_report
 
     assert_equal 13, grant[:cascade][:screened]     # large, passes
     assert_equal :suppressed, grant[:cascade][:reactive]  # n=1, suppressed
     assert_equal :suppressed, grant[:drop_off][:reactive]
+  end
+
+  # rook#51: the telescoping identity cascade[screened] - drop_off[screened] ==
+  # cascade[reactive] must not recover the suppressed reactive count. The
+  # complement (drop_off[screened]) is suppressed so the subtraction is blocked.
+  def test_cascade_drop_off_subtraction_cannot_recover_suppressed_reactive
+    grant = build_report(patients: rare_reactive_cohort).to_grant_report
+
+    assert_equal 13, grant[:cascade][:screened]
+    assert_equal :suppressed, grant[:cascade][:reactive]
+    assert_equal :suppressed, grant[:drop_off][:screened] # complement suppressed
+  end
+
+  # Fix 2: summary_h is the internal/PHI aggregate (exact counts, no
+  # suppression). Sharing goes through to_grant_report, which suppresses.
+  def test_summary_h_is_internal_phi_surface_distinct_from_grant_report
+    report = build_report(patients: suppression_cohort)
+
+    internal = report.by_site["mobile-2"].summary_h
+    assert_equal 3, internal[:counts][:screened] # exact, unsuppressed (internal)
+
+    shareable = report.to_grant_report[:disaggregation][:by_site]["mobile-2"]
+    assert_equal :suppressed, shareable[:cascade][:screened] # suppressed for sharing
   end
 
   def test_min_cell_size_is_configurable
@@ -262,6 +307,33 @@ class Rook::CareCascade::CascadeServiceTest < Minitest::Test
     assert_equal 0, report.counts[:treatment_completed]
   end
 
+  # Fix 3: an order (MedicationRequest) alone credits neither treatment nor cure,
+  # even with a post-window negative RNA present.
+  def test_hcv_treatment_and_cure_not_credited_from_order_only
+    order_only = hcv_patient("h5", resources: [
+                              hcv_rna(result: :pos, date: "2026-01-01"),
+                              medication("1734340", status: "active", date: "2026-01-05"), # order, not admin
+                              hcv_rna(result: :neg, date: "2026-06-01")
+                            ])
+    report = hcv_report([ order_only ])
+
+    assert_equal 0, report.counts[:treatment_initiated]
+    assert_equal 0, report.counts[:treatment_completed]
+  end
+
+  # Fix 3: a dispense signal credits treatment and anchors SVR12 timing on its
+  # whenHandedOver date.
+  def test_hcv_cure_credited_via_dispense_anchor
+    cured = hcv_patient("h6", resources: [
+                          hcv_rna(result: :pos, date: "2026-01-01"),
+                          med_dispense("1734340", date: "2026-01-05"),
+                          hcv_rna(result: :neg, date: "2026-05-01") # >12wk after dispense
+                        ])
+    report = hcv_report([ cured ])
+
+    assert_equal 1, report.counts[:treatment_completed]
+  end
+
   # Fix 1: cure fails closed when treatment has no usable date.
   def test_hcv_cure_not_credited_when_treatment_has_no_date
     undated = hcv_patient("h4", resources: [
@@ -279,12 +351,30 @@ class Rook::CareCascade::CascadeServiceTest < Minitest::Test
   # FHIR STATUS FILTERING (fix 2)
   # =============================================================================
 
-  def test_cancelled_or_draft_medication_does_not_count_as_treatment
-    patient = active_syphilis_patient("s1", extra: [ medication("7982", status: "cancelled") ])
+  def test_cancelled_or_errored_administration_does_not_count_as_treatment
+    patient = active_syphilis_patient("s1", extra: [ med_admin("7982", status: "entered-in-error") ])
     report = build_report(patients: [ patient ])
 
     assert_equal 0, report.counts[:treatment_initiated]
     assert_equal 1, report.counts[:active_infection]
+  end
+
+  # Fix 3: a bare MedicationRequest is an ORDER, not administration — it must not
+  # credit treatment (an accepted-status order still counts as nothing).
+  def test_bare_medication_order_does_not_count_as_treatment
+    patient = active_syphilis_patient("ord1", extra: [ medication("7982", status: "active") ])
+    report = build_report(patients: [ patient ])
+
+    assert_equal 0, report.counts[:treatment_initiated]
+    assert_equal 1, report.counts[:active_infection]
+  end
+
+  # Fix 3: an administration/dispense signal DOES credit treatment.
+  def test_medication_dispense_counts_as_treatment
+    patient = active_syphilis_patient("disp1", extra: [ med_dispense("7982") ])
+    report = build_report(patients: [ patient ])
+
+    assert_equal 1, report.counts[:treatment_initiated]
   end
 
   def test_entered_in_error_procedure_does_not_count_as_treatment
@@ -328,6 +418,29 @@ class Rook::CareCascade::CascadeServiceTest < Minitest::Test
     report = build_report(patients: [ patient ])
 
     assert_equal 1, report.counts[:screened]
+    assert_equal 1, report.counts[:reactive]
+  end
+
+  # ICD-10-CM parent codes subsume their dotted descendants: the code set lists
+  # A51 (parent), so a patient coded A51.9 reaches active infection.
+  def test_icd10_parent_code_matches_dotted_descendant_condition
+    patient = patient("icd1", site: "mobile-1", ai_an: true, resources: [
+                        syph_screen(result: :pos),
+                        syph_confirm(result: :neg),
+                        condition("A51.9", system: "http://hl7.org/fhir/sid/icd-10-cm")
+                      ])
+    assert_equal 1, build_report(patients: [ patient ]).counts[:active_infection]
+  end
+
+  # Prefix matching is dot-boundary only — "A511" is not a descendant of A51.
+  def test_icd10_prefix_match_does_not_over_match
+    patient = patient("icd2", site: "mobile-1", ai_an: true, resources: [
+                        syph_screen(result: :pos),
+                        condition("A511", system: "http://hl7.org/fhir/sid/icd-10-cm")
+                      ])
+    report = build_report(patients: [ patient ])
+
+    assert_equal 0, report.counts[:active_infection]
     assert_equal 1, report.counts[:reactive]
   end
 
@@ -493,6 +606,14 @@ class Rook::CareCascade::CascadeServiceTest < Minitest::Test
     large + small
   end
 
+  # 12 screened-negative + 1 reactive, single site/subgroup — isolates the
+  # whole-cohort cascade<->drop_off telescoping suppression.
+  def rare_reactive_cohort
+    cohort = (1..12).map { |i| patient("s#{i}", site: "mobile-1", ai_an: false, resources: [ syph_screen(result: :neg) ]) }
+    cohort << patient("rare", site: "mobile-1", ai_an: false, resources: [ syph_screen(result: :pos) ])
+    cohort
+  end
+
   def patient(id, site:, ai_an:, resources:)
     { patient_id: id, site: site, ai_an: ai_an, resources: resources }
   end
@@ -539,13 +660,37 @@ class Rook::CareCascade::CascadeServiceTest < Minitest::Test
   def hcv_rna(result:, status: "final", date: nil) = observation("11259-9", result: result, status: status, date: date)
 
   def pcn_med
-    medication("7982") # penicillin G benzathine
+    med_admin("7982") # penicillin G benzathine (administered)
   end
 
-  def daa_med(status: "active", date: nil)
-    medication("1734340", status: status, date: date) # DAA regimen
+  def daa_med(status: "completed", date: nil)
+    med_admin("1734340", status: status, date: date) # DAA regimen (administered)
   end
 
+  # A MedicationAdministration — evidence the drug was actually given. Its
+  # effectiveDateTime anchors SVR12 timing.
+  def med_admin(code, status: "completed", date: nil, system: RXNORM)
+    admin = {
+      resourceType: "MedicationAdministration",
+      status: status,
+      medicationCodeableConcept: { coding: [ { system: system, code: code } ] }
+    }
+    admin[:effectiveDateTime] = date if date
+    admin
+  end
+
+  def med_dispense(code, status: "completed", date: nil, system: RXNORM)
+    disp = {
+      resourceType: "MedicationDispense",
+      status: status,
+      medicationCodeableConcept: { coding: [ { system: system, code: code } ] }
+    }
+    disp[:whenHandedOver] = date if date
+    disp
+  end
+
+  # A bare MedicationRequest — an ORDER, not administration. Must NOT credit
+  # treatment.
   def medication(code, status: "active", date: nil, system: RXNORM)
     med = {
       resourceType: "MedicationRequest",

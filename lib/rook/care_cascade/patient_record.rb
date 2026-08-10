@@ -29,8 +29,13 @@ module Rook
     # * Clinical predicates honour FHIR +status+: only accepted, final resources
     #   count. Cancelled/draft/entered-in-error/aborted/preliminary data is
     #   ignored rather than trusted.
+    # * "Treatment initiated" requires an administration/dispense/statement
+    #   signal — a bare +MedicationRequest+ (an order) is NOT treatment. The
+    #   SVR12 cure anchor uses the administration/effective time, never an order
+    #   date, and fails closed when the treatment has no usable date.
     # * Coding matches require BOTH system and code — an identical code in an
     #   unrelated terminology never satisfies a LOINC/RxNorm/ICD-10/SNOMED set.
+    #   ICD-10-CM parent codes match their dotted descendants (A51 => A51.9).
     class PatientRecord
       class MissingIdentifierError < Rook::Error; end
 
@@ -46,13 +51,22 @@ module Rook
       # Accepted FHIR +status+ values per resource type. Anything else (including
       # a missing status) is treated as untrusted and ignored.
       ACCEPTED_OBSERVATION_STATUSES = %w[final amended corrected].freeze
-      ACCEPTED_MEDICATION_REQUEST_STATUSES = %w[active completed on-hold stopped].freeze
-      ACCEPTED_MEDICATION_STATEMENT_STATUSES = %w[active completed on-hold stopped].freeze
+      # "Treatment initiated" requires actual administration evidence — an order
+      # (MedicationRequest) alone does not count. Accepted statuses per
+      # administration-evidence resource type:
+      ACCEPTED_MEDICATION_ADMINISTRATION_STATUSES = %w[in-progress completed].freeze
+      ACCEPTED_MEDICATION_DISPENSE_STATUSES = %w[in-progress completed].freeze
+      ACCEPTED_MEDICATION_STATEMENT_STATUSES = %w[active completed].freeze
       ACCEPTED_PROCEDURE_STATUSES = %w[in-progress completed].freeze
 
       # Condition statuses that exclude a diagnosis from "active infection".
       RESOLVED_CLINICAL_STATUSES = %w[resolved inactive remission].freeze
       REFUTED_VERIFICATION_STATUSES = %w[entered-in-error refuted].freeze
+
+      # ICD-10-CM is a dotted hierarchy: a parent code (e.g. A51) subsumes its
+      # descendants (A51.0, A51.9). Prefix matching is enabled ONLY for this
+      # system; other terminologies match exactly.
+      ICD10CM_SYSTEM = "http://hl7.org/fhir/sid/icd-10-cm"
 
       attr_reader :patient_id, :site, :ai_an, :resources
 
@@ -122,13 +136,12 @@ module Rook
         end
       end
 
-      # An accepted MedicationRequest or MedicationStatement for one of +codes+
-      # exists.
-      def medication_present?(codes)
-        accepted_medications.any? do |med|
-          concept = med[:medicationCodeableConcept] || med["medicationCodeableConcept"]
-          coding_matches?(concept, codes)
-        end
+      # Evidence that a medication for one of +codes+ was actually administered,
+      # dispensed, or taken (MedicationAdministration / MedicationDispense /
+      # MedicationStatement). A bare MedicationRequest is an order, not
+      # treatment, and is deliberately ignored here.
+      def medication_administered?(codes)
+        treatment_administrations(codes).any?
       end
 
       # An accepted Procedure with one of +codes+ is recorded.
@@ -138,8 +151,9 @@ module Rook
         end
       end
 
-      # Latest known treatment time (MedicationRequest.authoredOn, medication or
-      # procedure effective/performed) for +codes+, or nil when undated/absent.
+      # Latest known treatment time for +codes+ from administration/dispense/
+      # statement effective times and procedure performed times, or nil when
+      # undated/absent (the cure anchor fails closed on a nil).
       def latest_treatment_time(codes)
         treatment_times(codes).max
       end
@@ -153,9 +167,21 @@ module Rook
         end
       end
 
-      def accepted_medications
-        resources_of_type("MedicationRequest").select { |m| accepted_status?(m, ACCEPTED_MEDICATION_REQUEST_STATUSES) } +
-          resources_of_type("MedicationStatement").select { |m| accepted_status?(m, ACCEPTED_MEDICATION_STATEMENT_STATUSES) }
+      # Resources that evidence the medication was actually given/taken (NOT an
+      # order): accepted MedicationAdministration, MedicationDispense, and
+      # MedicationStatement for one of +codes+.
+      def treatment_administrations(codes)
+        administration_resources.select { |r| coding_matches?(medication_concept(r), codes) }
+      end
+
+      def administration_resources
+        resources_of_type("MedicationAdministration").select { |r| accepted_status?(r, ACCEPTED_MEDICATION_ADMINISTRATION_STATUSES) } +
+          resources_of_type("MedicationDispense").select { |r| accepted_status?(r, ACCEPTED_MEDICATION_DISPENSE_STATUSES) } +
+          resources_of_type("MedicationStatement").select { |r| accepted_status?(r, ACCEPTED_MEDICATION_STATEMENT_STATUSES) }
+      end
+
+      def medication_concept(resource)
+        resource[:medicationCodeableConcept] || resource["medicationCodeableConcept"]
       end
 
       def accepted_procedures
@@ -163,10 +189,7 @@ module Rook
       end
 
       def treatment_times(codes)
-        med_times = accepted_medications.filter_map do |med|
-          concept = med[:medicationCodeableConcept] || med["medicationCodeableConcept"]
-          medication_time(med) if coding_matches?(concept, codes)
-        end
+        med_times = treatment_administrations(codes).filter_map { |r| administration_time(r) }
         proc_times = accepted_procedures.filter_map do |proc_res|
           procedure_time(proc_res) if coding_matches?(proc_res[:code] || proc_res["code"], codes)
         end
@@ -213,8 +236,16 @@ module Rook
 
       # ---- Temporal helpers ------------------------------------------------
 
-      def medication_time(med)
-        parse_time(med[:authoredOn] || med["authoredOn"]) || effective_time(med)
+      # Administration-evidence time. Never an order date: MedicationDispense
+      # uses whenHandedOver/whenPrepared; administration/statement use the
+      # effective time.
+      def administration_time(resource)
+        if (resource[:resourceType] || resource["resourceType"]) == "MedicationDispense"
+          parse_time(resource[:whenHandedOver] || resource["whenHandedOver"]) ||
+            parse_time(resource[:whenPrepared] || resource["whenPrepared"])
+        else
+          effective_time(resource)
+        end
       end
 
       def procedure_time(proc_res)
@@ -266,10 +297,22 @@ module Rook
 
       def code_set_entry_matches?(entry, system, code)
         if entry.is_a?(Hash)
-          (entry[:system] || entry["system"]) == system && (entry[:code] || entry["code"]) == code
+          entry_system = entry[:system] || entry["system"]
+          entry_code   = entry[:code] || entry["code"]
+          entry_system == system && code_matches?(entry_system, entry_code, code)
         else
           entry == code
         end
+      end
+
+      # Exact match, plus ICD-10-CM parent->descendant subsumption at a dot
+      # boundary only: entry "A51" matches "A51.0"/"A51.9" but never "A511" or
+      # "A5". Non-hierarchical systems (LOINC/RxNorm/SNOMED) match exactly.
+      def code_matches?(system, entry_code, code)
+        return false if code.nil? || entry_code.nil?
+        return true if entry_code == code
+
+        system == ICD10CM_SYSTEM && code.start_with?("#{entry_code}.")
       end
 
       def any_coding_code?(codeable_concept, code_set)
