@@ -118,7 +118,9 @@ class Rook::CareCascade::CascadeServiceTest < Minitest::Test
 
   def test_grant_report_is_aggregate_only_no_patient_ids
     report = build_report(patients: syphilis_cohort)
-    grant = report.to_grant_report(period: "2026-Q1", program: "RHTP")
+    # min_cell_size: 1 disables small-cell suppression so exact counts are
+    # asserted here; suppression itself is covered separately below.
+    grant = report.to_grant_report(period: "2026-Q1", program: "RHTP", min_cell_size: 1)
 
     assert_equal "RHTP", grant[:program]
     assert_equal "2026-Q1", grant[:reporting_period]
@@ -150,6 +152,72 @@ class Rook::CareCascade::CascadeServiceTest < Minitest::Test
 
     refute_includes grant.to_s, "patient_id"
     refute_includes grant.to_s, "u1"
+  end
+
+  # =============================================================================
+  # SMALL-CELL SUPPRESSION IN GRANT OUTPUT (PHI re-identification safeguard)
+  #
+  # Grant output must not expose small cells (default threshold 11, the HHS/CMS
+  # standard). Tribal-data release still requires Expert Determination — this is
+  # a safeguard, not a de-identification certification.
+  # =============================================================================
+
+  def test_grant_report_suppresses_small_cells_and_passes_large_cells
+    grant = build_report(patients: suppression_cohort).to_grant_report
+
+    # Whole-cohort large cells pass through unchanged.
+    assert_equal 15, grant[:cohort_size]
+    assert_equal 15, grant[:cascade][:screened]
+    assert_equal 12, grant[:disaggregation][:by_site]["mobile-1"][:cohort_size]
+
+    # Small single-axis slice is redacted to the sentinel (not the exact number).
+    assert_equal :suppressed, grant[:disaggregation][:by_site]["mobile-2"][:cohort_size]
+
+    # Small cross-tab cell — the sharpest re-identification risk — is suppressed.
+    cross = grant[:disaggregation][:by_site_and_ai_an][[ "mobile-2", "AI/AN" ]]
+    assert_equal :suppressed, cross[:cohort_size]
+    assert_equal :suppressed, cross[:cascade][:screened]
+
+    refute_includes grant.to_s, "m2_1" # no ids anywhere
+  end
+
+  def test_grant_report_suppresses_conversion_rate_with_small_denominator
+    grant = build_report(patients: suppression_cohort).to_grant_report
+
+    small = grant[:disaggregation][:by_site]["mobile-2"] # n=3 denominator
+    assert_equal :suppressed, small[:conversion_rates]["screened_to_reactive"]
+
+    large = grant[:disaggregation][:by_site]["mobile-1"] # n=12 denominator
+    assert_equal 0.0, large[:conversion_rates]["screened_to_reactive"]
+  end
+
+  def test_top_level_rare_stage_count_is_suppressed
+    # 12 screened-negative + 1 reactive -> reactive stage count of 1 is exposed
+    # unless suppressed at the whole-cohort level.
+    cohort = (1..12).map { |i| patient("s#{i}", site: "mobile-1", ai_an: false, resources: [ syph_screen(result: :neg) ]) }
+    cohort << patient("rare", site: "mobile-1", ai_an: false, resources: [ syph_screen(result: :pos) ])
+    grant = build_report(patients: cohort).to_grant_report
+
+    assert_equal 13, grant[:cascade][:screened]     # large, passes
+    assert_equal :suppressed, grant[:cascade][:reactive]  # n=1, suppressed
+    assert_equal :suppressed, grant[:drop_off][:reactive]
+  end
+
+  def test_min_cell_size_is_configurable
+    grant = build_report(patients: suppression_cohort).to_grant_report(min_cell_size: 1)
+    assert_equal 3, grant[:disaggregation][:by_site]["mobile-2"][:cohort_size]
+  end
+
+  def test_suppression_does_not_touch_full_report_or_worklists
+    # to_h and worklists are the access-controlled PHI path — full counts + ids.
+    report = build_report(patients: suppression_cohort)
+    cross = report.to_h[:by_site_and_ai_an][[ "mobile-2", "AI/AN" ]]
+    assert_equal 3, cross[:total]
+    assert_equal 3, cross[:counts][:screened]
+
+    syph = build_report(patients: syphilis_cohort)
+    assert_equal 3, syph.worklists[:reactive][:count]
+    assert_equal %w[r1 r2 r3].sort, syph.worklists[:reactive][:patient_ids].sort
   end
 
   # =============================================================================
@@ -411,6 +479,18 @@ class Rook::CareCascade::CascadeServiceTest < Minitest::Test
 
   def site_for(i)
     i.odd? ? "mobile-1" : "mobile-2"
+  end
+
+  # 15 patients: a large mobile-1/non-AI/AN cell (12) and a small
+  # mobile-2/AI/AN cell (3), for exercising small-cell suppression.
+  def suppression_cohort
+    large = (1..12).map do |i|
+      patient("m1_#{i}", site: "mobile-1", ai_an: false, resources: [ syph_screen(result: :neg) ])
+    end
+    small = (1..3).map do |i|
+      patient("m2_#{i}", site: "mobile-2", ai_an: true, resources: [ syph_screen(result: :neg) ])
+    end
+    large + small
   end
 
   def patient(id, site:, ai_an:, resources:)

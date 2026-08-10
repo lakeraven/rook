@@ -19,6 +19,12 @@ module Rook
     # +to_grant_report+ emits aggregate counts and rates only — no ids — for
     # onward submission.
     class Report
+      # Minimum cell size for grant-output small-cell suppression (HHS/CMS
+      # standard). See #to_grant_report.
+      DEFAULT_MIN_CELL_SIZE = 11
+      # Sentinel written in place of a redacted small cell (never the number).
+      SUPPRESSED = :suppressed
+
       attr_reader :definition, :classifications
 
       # Classify a cohort of PatientRecords against a definition's matchers.
@@ -144,20 +150,48 @@ module Rook
       # Submission-shaped outcomes output for grant reporting (RWJF / ARPA-H /
       # RHTP). Aggregate counts and conversion rates, disaggregated by site and
       # AI/AN status. No patient-level data.
-      def to_grant_report(period: nil, program: nil)
+      #
+      # === Small-cell suppression (PHI re-identification safeguard)
+      # Bare counts can re-identify people in a small street-medicine cohort: a
+      # cell like {site, AI/AN, treatment_completed: 1} names an individual with
+      # no id present. Every count/cohort_size below +min_cell_size+ (default 11,
+      # the HHS/CMS standard) is redacted to +:suppressed+ — the sentinel, NOT
+      # the exact small number — across the whole-cohort cascade/drop_off AND
+      # every disaggregation slice (by_site, by_ai_an, and especially the
+      # by_site_and_ai_an cross-tab). A conversion rate is suppressed whenever
+      # either endpoint count is small (a rate over n=1-2 is equally disclosive).
+      #
+      # This is a SAFEGUARD, not a de-identification certification. Only PRIMARY
+      # (single-cell) suppression is applied; a residual margin-arithmetic risk
+      # remains — when exactly one cell in a row/column is suppressed, the margin
+      # can let it be back-computed (complementary suppression is deferred, see
+      # rook follow-up). Tribal-data release still requires Expert Determination
+      # per Lakeraven policy; Safe Harbor / bare counts are insufficient.
+      def to_grant_report(period: nil, program: nil, min_cell_size: DEFAULT_MIN_CELL_SIZE)
         {
           program: program,
           condition: { key: condition_key, name: condition_name },
           reporting_period: period,
-          cohort_size: total,
-          cascade: counts,
-          drop_off: reached_exactly_counts,
-          conversion_rates: conversions,
+          min_cell_size: min_cell_size,
+          cohort_size: suppress_count(total, min_cell_size),
+          cascade: suppress_counts(counts, min_cell_size),
+          drop_off: suppress_counts(reached_exactly_counts, min_cell_size),
+          conversion_rates: suppress_conversions(min_cell_size),
           disaggregation: {
-            by_site: by_site.transform_values { |r| grant_slice(r) },
-            by_ai_an: by_ai_an.transform_values { |r| grant_slice(r) },
-            by_site_and_ai_an: by_site_and_ai_an.transform_values { |r| grant_slice(r) }
+            by_site: by_site.transform_values { |r| r.grant_slice(min_cell_size) },
+            by_ai_an: by_ai_an.transform_values { |r| r.grant_slice(min_cell_size) },
+            by_site_and_ai_an: by_site_and_ai_an.transform_values { |r| r.grant_slice(min_cell_size) }
           }
+        }
+      end
+
+      # A single disaggregation slice, counts-only and small-cell suppressed.
+      # Public so parent reports can build slices from their sub-reports.
+      def grant_slice(min_cell_size = DEFAULT_MIN_CELL_SIZE)
+        {
+          cohort_size: suppress_count(total, min_cell_size),
+          cascade: suppress_counts(counts, min_cell_size),
+          conversion_rates: suppress_conversions(min_cell_size)
         }
       end
 
@@ -174,12 +208,34 @@ module Rook
         end
       end
 
-      def grant_slice(report)
-        {
-          cohort_size: report.total,
-          cascade: report.counts,
-          conversion_rates: report.conversions
-        }
+      # ---- Small-cell suppression ------------------------------------------
+
+      # A count is disclosive (must be redacted) when it names 1..N-1 people.
+      # Zero is not disclosive (nobody to re-identify) and passes through.
+      def cell_suppressed?(count, min)
+        count.is_a?(Integer) && count.positive? && count < min
+      end
+
+      def suppress_count(count, min)
+        cell_suppressed?(count, min) ? SUPPRESSED : count
+      end
+
+      def suppress_counts(counts_hash, min)
+        counts_hash.transform_values { |v| suppress_count(v, min) }
+      end
+
+      # Suppress a conversion rate when either endpoint count is small: a small
+      # denominator (rate over n=1-2) or a small numerator (back-computable to
+      # the exact reached count) is disclosive. Zero-denominator rates stay nil
+      # (undefined), matching #conversions.
+      def suppress_conversions(min)
+        c = counts
+        rates = conversions
+        definition.stages.each_cons(2).each_with_object({}) do |(from, to), acc|
+          key = "#{from.key}_to_#{to.key}"
+          disclosive = cell_suppressed?(c[from.key], min) || cell_suppressed?(c[to.key], min)
+          acc[key] = disclosive ? SUPPRESSED : rates[key]
+        end
       end
 
       def subreports
