@@ -136,7 +136,8 @@ module Rook
         summary_h.merge(
           worklists: worklists,
           by_site: by_site.transform_values(&:summary_h),
-          by_ai_an: by_ai_an.transform_values(&:summary_h)
+          by_ai_an: by_ai_an.transform_values(&:summary_h),
+          by_site_and_ai_an: by_site_and_ai_an.transform_values(&:summary_h)
         )
       end
 
@@ -154,7 +155,8 @@ module Rook
           conversion_rates: conversions,
           disaggregation: {
             by_site: by_site.transform_values { |r| grant_slice(r) },
-            by_ai_an: by_ai_an.transform_values { |r| grant_slice(r) }
+            by_ai_an: by_ai_an.transform_values { |r| grant_slice(r) },
+            by_site_and_ai_an: by_site_and_ai_an.transform_values { |r| grant_slice(r) }
           }
         }
       end

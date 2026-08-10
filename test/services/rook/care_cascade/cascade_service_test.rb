@@ -132,6 +132,26 @@ class Rook::CareCascade::CascadeServiceTest < Minitest::Test
     refute_includes grant.to_s, "r1"
   end
 
+  def test_grant_report_includes_site_by_ai_an_cross_tab_counts_only
+    cohort = syphilis_cohort +
+             [ { patient_id: "u1", site: "mobile-1", resources: [ syph_screen(result: :pos) ] } ] # unknown AI/AN
+    report = build_report(patients: cohort)
+    grant = report.to_grant_report(period: "2026-Q1", program: "RHTP")
+
+    cross = grant[:disaggregation][:by_site_and_ai_an]
+    assert cross.any?, "expected a site x AI/AN cross-tab"
+    # unknown AI/AN category is carried through
+    assert(cross.keys.any? { |k| k.include?("unknown") })
+    # counts-only slices, same shape as the other disaggregations
+    slice = cross.values.first
+    assert slice.key?(:cascade)
+    assert slice.key?(:cohort_size)
+    refute slice.key?(:patient_ids)
+
+    refute_includes grant.to_s, "patient_id"
+    refute_includes grant.to_s, "u1"
+  end
+
   # =============================================================================
   # HCV CASCADE — CURE (SVR12) COMPLETION
   # =============================================================================
