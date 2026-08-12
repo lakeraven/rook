@@ -43,6 +43,8 @@ BP_LOINC = {system: "http://loinc.org", code: "85354-9",
             display: "Blood pressure panel with all children optional"}.freeze
 SYS_LOINC = {system: "http://loinc.org", code: "8480-6", display: "Systolic blood pressure"}.freeze
 DIA_LOINC = {system: "http://loinc.org", code: "8462-4", display: "Diastolic blood pressure"}.freeze
+PHQ9_LOINC = {system: "http://loinc.org", code: "44261-6",
+              display: "Patient Health Questionnaire 9 item (PHQ-9) total score"}.freeze
 
 # Placeholder family names (NATO phonetic) — obviously synthetic, no ethnic
 # connotation, no real-person or partner names.
@@ -143,6 +145,20 @@ def bp_resource(patient_id:, seq:, systolic:, diastolic:, effective:)
   }
 end
 
+def phq9_resource(patient_id:, seq:, score:, effective:)
+  {
+    resourceType: "Observation",
+    id: format("demo-obs-phq9-%03d", seq),
+    status: "final",
+    category: [{coding: [{system: "http://terminology.hl7.org/CodeSystem/observation-category",
+                          code: "survey"}]}],
+    code: {coding: [PHQ9_LOINC], text: PHQ9_LOINC[:display]},
+    subject: {reference: "Patient/#{patient_id}"},
+    effectiveDateTime: effective,
+    valueQuantity: {value: score, unit: "{score}", system: "http://unitsofmeasure.org", code: "{score}"}
+  }
+end
+
 # ---------------------------------------------------------------------------
 # Population definition (hand-authored so measure counts are known/testable).
 #
@@ -236,6 +252,12 @@ def build_bundle
   cond_seq = 0
   a1c_seq = 0
   bp_seq = 0
+  phq9_seq = 0
+
+  # Depression screening (PHQ-9) for the GPRA screening measure: the first 28
+  # of 35 patients are screened in-period, the remaining 7 are not. Deterministic
+  # so the GPRA measure computes a known 28/35 (80%) screening rate.
+  screened_count = 28
 
   population_spec.each_with_index do |p, idx|
     seq = idx + 1
@@ -264,6 +286,11 @@ def build_bundle
       entries << {resource: bp_resource(patient_id: pid, seq: bp_seq,
         systolic: systolic, diastolic: diastolic,
         effective: effective)}
+    end
+    if idx < screened_count
+      phq9_seq += 1
+      entries << {resource: phq9_resource(patient_id: pid, seq: phq9_seq,
+        score: idx % 6, effective: "2025-06-15")}
     end
   end
 

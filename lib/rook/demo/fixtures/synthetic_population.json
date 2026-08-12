@@ -272,6 +272,43 @@
     },
     {
       "resource": {
+        "resourceType": "Observation",
+        "id": "demo-obs-phq9-001",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "44261-6",
+              "display": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+            }
+          ],
+          "text": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+        },
+        "subject": {
+          "reference": "Patient/demo-pt-001"
+        },
+        "effectiveDateTime": "2025-06-15",
+        "valueQuantity": {
+          "value": 0,
+          "unit": "{score}",
+          "system": "http://unitsofmeasure.org",
+          "code": "{score}"
+        }
+      }
+    },
+    {
+      "resource": {
         "resourceType": "Patient",
         "id": "demo-pt-002",
         "meta": {
@@ -535,6 +572,43 @@
             }
           }
         ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "demo-obs-phq9-002",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "44261-6",
+              "display": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+            }
+          ],
+          "text": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+        },
+        "subject": {
+          "reference": "Patient/demo-pt-002"
+        },
+        "effectiveDateTime": "2025-06-15",
+        "valueQuantity": {
+          "value": 1,
+          "unit": "{score}",
+          "system": "http://unitsofmeasure.org",
+          "code": "{score}"
+        }
       }
     },
     {
@@ -806,6 +880,43 @@
     },
     {
       "resource": {
+        "resourceType": "Observation",
+        "id": "demo-obs-phq9-003",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "44261-6",
+              "display": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+            }
+          ],
+          "text": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+        },
+        "subject": {
+          "reference": "Patient/demo-pt-003"
+        },
+        "effectiveDateTime": "2025-06-15",
+        "valueQuantity": {
+          "value": 2,
+          "unit": "{score}",
+          "system": "http://unitsofmeasure.org",
+          "code": "{score}"
+        }
+      }
+    },
+    {
+      "resource": {
         "resourceType": "Patient",
         "id": "demo-pt-004",
         "meta": {
@@ -1069,6 +1180,43 @@
             }
           }
         ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "demo-obs-phq9-004",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "44261-6",
+              "display": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+            }
+          ],
+          "text": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+        },
+        "subject": {
+          "reference": "Patient/demo-pt-004"
+        },
+        "effectiveDateTime": "2025-06-15",
+        "valueQuantity": {
+          "value": 3,
+          "unit": "{score}",
+          "system": "http://unitsofmeasure.org",
+          "code": "{score}"
+        }
       }
     },
     {
@@ -1340,6 +1488,43 @@
     },
     {
       "resource": {
+        "resourceType": "Observation",
+        "id": "demo-obs-phq9-005",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "44261-6",
+              "display": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+            }
+          ],
+          "text": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+        },
+        "subject": {
+          "reference": "Patient/demo-pt-005"
+        },
+        "effectiveDateTime": "2025-06-15",
+        "valueQuantity": {
+          "value": 4,
+          "unit": "{score}",
+          "system": "http://unitsofmeasure.org",
+          "code": "{score}"
+        }
+      }
+    },
+    {
+      "resource": {
         "resourceType": "Patient",
         "id": "demo-pt-006",
         "meta": {
@@ -1487,6 +1672,43 @@
     },
     {
       "resource": {
+        "resourceType": "Observation",
+        "id": "demo-obs-phq9-006",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "44261-6",
+              "display": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+            }
+          ],
+          "text": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+        },
+        "subject": {
+          "reference": "Patient/demo-pt-006"
+        },
+        "effectiveDateTime": "2025-06-15",
+        "valueQuantity": {
+          "value": 5,
+          "unit": "{score}",
+          "system": "http://unitsofmeasure.org",
+          "code": "{score}"
+        }
+      }
+    },
+    {
+      "resource": {
         "resourceType": "Patient",
         "id": "demo-pt-007",
         "meta": {
@@ -1593,6 +1815,43 @@
           "reference": "Patient/demo-pt-007"
         },
         "onsetDateTime": "2019-04-01"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "demo-obs-phq9-007",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "44261-6",
+              "display": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+            }
+          ],
+          "text": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+        },
+        "subject": {
+          "reference": "Patient/demo-pt-007"
+        },
+        "effectiveDateTime": "2025-06-15",
+        "valueQuantity": {
+          "value": 0,
+          "unit": "{score}",
+          "system": "http://unitsofmeasure.org",
+          "code": "{score}"
+        }
       }
     },
     {
@@ -1739,6 +1998,43 @@
           "unit": "%",
           "system": "http://unitsofmeasure.org",
           "code": "%"
+        }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "demo-obs-phq9-008",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "44261-6",
+              "display": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+            }
+          ],
+          "text": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+        },
+        "subject": {
+          "reference": "Patient/demo-pt-008"
+        },
+        "effectiveDateTime": "2025-06-15",
+        "valueQuantity": {
+          "value": 1,
+          "unit": "{score}",
+          "system": "http://unitsofmeasure.org",
+          "code": "{score}"
         }
       }
     },
@@ -1891,6 +2187,43 @@
     },
     {
       "resource": {
+        "resourceType": "Observation",
+        "id": "demo-obs-phq9-009",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "44261-6",
+              "display": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+            }
+          ],
+          "text": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+        },
+        "subject": {
+          "reference": "Patient/demo-pt-009"
+        },
+        "effectiveDateTime": "2025-06-15",
+        "valueQuantity": {
+          "value": 2,
+          "unit": "{score}",
+          "system": "http://unitsofmeasure.org",
+          "code": "{score}"
+        }
+      }
+    },
+    {
+      "resource": {
         "resourceType": "Patient",
         "id": "demo-pt-010",
         "meta": {
@@ -2033,6 +2366,43 @@
           "unit": "%",
           "system": "http://unitsofmeasure.org",
           "code": "%"
+        }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "demo-obs-phq9-010",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "44261-6",
+              "display": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+            }
+          ],
+          "text": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+        },
+        "subject": {
+          "reference": "Patient/demo-pt-010"
+        },
+        "effectiveDateTime": "2025-06-15",
+        "valueQuantity": {
+          "value": 3,
+          "unit": "{score}",
+          "system": "http://unitsofmeasure.org",
+          "code": "{score}"
         }
       }
     },
@@ -2185,6 +2555,43 @@
     },
     {
       "resource": {
+        "resourceType": "Observation",
+        "id": "demo-obs-phq9-011",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "44261-6",
+              "display": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+            }
+          ],
+          "text": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+        },
+        "subject": {
+          "reference": "Patient/demo-pt-011"
+        },
+        "effectiveDateTime": "2025-06-15",
+        "valueQuantity": {
+          "value": 4,
+          "unit": "{score}",
+          "system": "http://unitsofmeasure.org",
+          "code": "{score}"
+        }
+      }
+    },
+    {
+      "resource": {
         "resourceType": "Patient",
         "id": "demo-pt-012",
         "meta": {
@@ -2327,6 +2734,43 @@
           "unit": "%",
           "system": "http://unitsofmeasure.org",
           "code": "%"
+        }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "demo-obs-phq9-012",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "44261-6",
+              "display": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+            }
+          ],
+          "text": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+        },
+        "subject": {
+          "reference": "Patient/demo-pt-012"
+        },
+        "effectiveDateTime": "2025-06-15",
+        "valueQuantity": {
+          "value": 5,
+          "unit": "{score}",
+          "system": "http://unitsofmeasure.org",
+          "code": "{score}"
         }
       }
     },
@@ -2479,6 +2923,43 @@
     },
     {
       "resource": {
+        "resourceType": "Observation",
+        "id": "demo-obs-phq9-013",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "44261-6",
+              "display": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+            }
+          ],
+          "text": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+        },
+        "subject": {
+          "reference": "Patient/demo-pt-013"
+        },
+        "effectiveDateTime": "2025-06-15",
+        "valueQuantity": {
+          "value": 0,
+          "unit": "{score}",
+          "system": "http://unitsofmeasure.org",
+          "code": "{score}"
+        }
+      }
+    },
+    {
+      "resource": {
         "resourceType": "Patient",
         "id": "demo-pt-014",
         "meta": {
@@ -2621,6 +3102,43 @@
           "unit": "%",
           "system": "http://unitsofmeasure.org",
           "code": "%"
+        }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "demo-obs-phq9-014",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "44261-6",
+              "display": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+            }
+          ],
+          "text": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+        },
+        "subject": {
+          "reference": "Patient/demo-pt-014"
+        },
+        "effectiveDateTime": "2025-06-15",
+        "valueQuantity": {
+          "value": 1,
+          "unit": "{score}",
+          "system": "http://unitsofmeasure.org",
+          "code": "{score}"
         }
       }
     },
@@ -2773,6 +3291,43 @@
     },
     {
       "resource": {
+        "resourceType": "Observation",
+        "id": "demo-obs-phq9-015",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "44261-6",
+              "display": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+            }
+          ],
+          "text": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+        },
+        "subject": {
+          "reference": "Patient/demo-pt-015"
+        },
+        "effectiveDateTime": "2025-06-15",
+        "valueQuantity": {
+          "value": 2,
+          "unit": "{score}",
+          "system": "http://unitsofmeasure.org",
+          "code": "{score}"
+        }
+      }
+    },
+    {
+      "resource": {
         "resourceType": "Patient",
         "id": "demo-pt-016",
         "meta": {
@@ -2915,6 +3470,43 @@
           "unit": "%",
           "system": "http://unitsofmeasure.org",
           "code": "%"
+        }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "demo-obs-phq9-016",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "44261-6",
+              "display": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+            }
+          ],
+          "text": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+        },
+        "subject": {
+          "reference": "Patient/demo-pt-016"
+        },
+        "effectiveDateTime": "2025-06-15",
+        "valueQuantity": {
+          "value": 3,
+          "unit": "{score}",
+          "system": "http://unitsofmeasure.org",
+          "code": "{score}"
         }
       }
     },
@@ -3067,6 +3659,43 @@
     },
     {
       "resource": {
+        "resourceType": "Observation",
+        "id": "demo-obs-phq9-017",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "44261-6",
+              "display": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+            }
+          ],
+          "text": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+        },
+        "subject": {
+          "reference": "Patient/demo-pt-017"
+        },
+        "effectiveDateTime": "2025-06-15",
+        "valueQuantity": {
+          "value": 4,
+          "unit": "{score}",
+          "system": "http://unitsofmeasure.org",
+          "code": "{score}"
+        }
+      }
+    },
+    {
+      "resource": {
         "resourceType": "Patient",
         "id": "demo-pt-018",
         "meta": {
@@ -3214,6 +3843,43 @@
     },
     {
       "resource": {
+        "resourceType": "Observation",
+        "id": "demo-obs-phq9-018",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "44261-6",
+              "display": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+            }
+          ],
+          "text": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+        },
+        "subject": {
+          "reference": "Patient/demo-pt-018"
+        },
+        "effectiveDateTime": "2025-06-15",
+        "valueQuantity": {
+          "value": 5,
+          "unit": "{score}",
+          "system": "http://unitsofmeasure.org",
+          "code": "{score}"
+        }
+      }
+    },
+    {
+      "resource": {
         "resourceType": "Patient",
         "id": "demo-pt-019",
         "meta": {
@@ -3356,6 +4022,43 @@
           "unit": "%",
           "system": "http://unitsofmeasure.org",
           "code": "%"
+        }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "demo-obs-phq9-019",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "44261-6",
+              "display": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+            }
+          ],
+          "text": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+        },
+        "subject": {
+          "reference": "Patient/demo-pt-019"
+        },
+        "effectiveDateTime": "2025-06-15",
+        "valueQuantity": {
+          "value": 0,
+          "unit": "{score}",
+          "system": "http://unitsofmeasure.org",
+          "code": "{score}"
         }
       }
     },
@@ -3545,6 +4248,43 @@
     },
     {
       "resource": {
+        "resourceType": "Observation",
+        "id": "demo-obs-phq9-020",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "44261-6",
+              "display": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+            }
+          ],
+          "text": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+        },
+        "subject": {
+          "reference": "Patient/demo-pt-020"
+        },
+        "effectiveDateTime": "2025-06-15",
+        "valueQuantity": {
+          "value": 1,
+          "unit": "{score}",
+          "system": "http://unitsofmeasure.org",
+          "code": "{score}"
+        }
+      }
+    },
+    {
+      "resource": {
         "resourceType": "Patient",
         "id": "demo-pt-021",
         "meta": {
@@ -3692,6 +4432,43 @@
     },
     {
       "resource": {
+        "resourceType": "Observation",
+        "id": "demo-obs-phq9-021",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "44261-6",
+              "display": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+            }
+          ],
+          "text": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+        },
+        "subject": {
+          "reference": "Patient/demo-pt-021"
+        },
+        "effectiveDateTime": "2025-06-15",
+        "valueQuantity": {
+          "value": 2,
+          "unit": "{score}",
+          "system": "http://unitsofmeasure.org",
+          "code": "{score}"
+        }
+      }
+    },
+    {
+      "resource": {
         "resourceType": "Patient",
         "id": "demo-pt-022",
         "meta": {
@@ -3834,6 +4611,43 @@
           "unit": "%",
           "system": "http://unitsofmeasure.org",
           "code": "%"
+        }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "demo-obs-phq9-022",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "44261-6",
+              "display": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+            }
+          ],
+          "text": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+        },
+        "subject": {
+          "reference": "Patient/demo-pt-022"
+        },
+        "effectiveDateTime": "2025-06-15",
+        "valueQuantity": {
+          "value": 3,
+          "unit": "{score}",
+          "system": "http://unitsofmeasure.org",
+          "code": "{score}"
         }
       }
     },
@@ -4014,6 +4828,43 @@
             }
           }
         ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "demo-obs-phq9-023",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "44261-6",
+              "display": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+            }
+          ],
+          "text": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+        },
+        "subject": {
+          "reference": "Patient/demo-pt-023"
+        },
+        "effectiveDateTime": "2025-06-15",
+        "valueQuantity": {
+          "value": 4,
+          "unit": "{score}",
+          "system": "http://unitsofmeasure.org",
+          "code": "{score}"
+        }
       }
     },
     {
@@ -4266,6 +5117,43 @@
     },
     {
       "resource": {
+        "resourceType": "Observation",
+        "id": "demo-obs-phq9-024",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "44261-6",
+              "display": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+            }
+          ],
+          "text": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+        },
+        "subject": {
+          "reference": "Patient/demo-pt-024"
+        },
+        "effectiveDateTime": "2025-06-15",
+        "valueQuantity": {
+          "value": 5,
+          "unit": "{score}",
+          "system": "http://unitsofmeasure.org",
+          "code": "{score}"
+        }
+      }
+    },
+    {
+      "resource": {
         "resourceType": "Patient",
         "id": "demo-pt-025",
         "meta": {
@@ -4441,6 +5329,43 @@
             }
           }
         ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "demo-obs-phq9-025",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "44261-6",
+              "display": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+            }
+          ],
+          "text": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+        },
+        "subject": {
+          "reference": "Patient/demo-pt-025"
+        },
+        "effectiveDateTime": "2025-06-15",
+        "valueQuantity": {
+          "value": 0,
+          "unit": "{score}",
+          "system": "http://unitsofmeasure.org",
+          "code": "{score}"
+        }
       }
     },
     {
@@ -4624,6 +5549,43 @@
     },
     {
       "resource": {
+        "resourceType": "Observation",
+        "id": "demo-obs-phq9-026",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "44261-6",
+              "display": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+            }
+          ],
+          "text": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+        },
+        "subject": {
+          "reference": "Patient/demo-pt-026"
+        },
+        "effectiveDateTime": "2025-06-15",
+        "valueQuantity": {
+          "value": 1,
+          "unit": "{score}",
+          "system": "http://unitsofmeasure.org",
+          "code": "{score}"
+        }
+      }
+    },
+    {
+      "resource": {
         "resourceType": "Patient",
         "id": "demo-pt-027",
         "meta": {
@@ -4803,6 +5765,43 @@
     },
     {
       "resource": {
+        "resourceType": "Observation",
+        "id": "demo-obs-phq9-027",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "44261-6",
+              "display": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+            }
+          ],
+          "text": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+        },
+        "subject": {
+          "reference": "Patient/demo-pt-027"
+        },
+        "effectiveDateTime": "2025-06-15",
+        "valueQuantity": {
+          "value": 2,
+          "unit": "{score}",
+          "system": "http://unitsofmeasure.org",
+          "code": "{score}"
+        }
+      }
+    },
+    {
+      "resource": {
         "resourceType": "Patient",
         "id": "demo-pt-028",
         "meta": {
@@ -4978,6 +5977,43 @@
             }
           }
         ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "demo-obs-phq9-028",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "44261-6",
+              "display": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+            }
+          ],
+          "text": "Patient Health Questionnaire 9 item (PHQ-9) total score"
+        },
+        "subject": {
+          "reference": "Patient/demo-pt-028"
+        },
+        "effectiveDateTime": "2025-06-15",
+        "valueQuantity": {
+          "value": 3,
+          "unit": "{score}",
+          "system": "http://unitsofmeasure.org",
+          "code": "{score}"
+        }
       }
     },
     {
