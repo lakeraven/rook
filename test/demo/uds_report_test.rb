@@ -88,7 +88,7 @@ class Rook::Demo::UDSReportTest < Minitest::Test
     assert_includes html, "40.0%"
     assert_includes html, "60.0%"
     # No real PHI / partner / tribe names leak into the output.
-    refute_match(/good medicine|mcuih|example tribe/i, html)
+    refute_match(/example demo org|example consortium|broken rock/i, html)
   end
 
   private

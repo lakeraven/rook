@@ -81,7 +81,7 @@ class Rook::Demo::GPRAReportTest < Minitest::Test
     assert_includes html, "<!DOCTYPE html>"
     assert_includes html, "IHS CRS / GPRA National Clinical Measures"
     assert_includes html, "80.0%"
-    refute_match(/good medicine|mcuih|example tribe/i, html)
+    refute_match(/example demo org|example consortium|broken rock/i, html)
   end
 
   private
