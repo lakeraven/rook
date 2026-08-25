@@ -1,0 +1,9 @@
+inherit_gem:
+  rubocop-rails-omakase: rubocop.yml
+
+AllCops:
+  TargetRubyVersion: 3.4
+  Exclude:
+    - "lib/rook/demo/fixtures/**/*"
+    - "vendor/**/*"
+    - "tmp/**/*"
