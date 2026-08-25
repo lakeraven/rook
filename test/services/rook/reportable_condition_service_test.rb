@@ -85,10 +85,10 @@ class Rook::ReportableConditionServiceTest < Minitest::Test
 
   def reportable_conditions
     [
-      { codes: ["A15.0", "A15.1", "A15.2", "A15.3"], name: "Tuberculosis", urgency: "24h" },
-      { codes: ["B05.0", "B05.1", "B05.9"], name: "Measles", urgency: "immediate" },
-      { codes: ["A01.0"], name: "Typhoid fever", urgency: "24h" },
-      { codes: ["B20"], name: "HIV", urgency: "7d" }
+      { codes: [ "A15.0", "A15.1", "A15.2", "A15.3" ], name: "Tuberculosis", urgency: "24h" },
+      { codes: [ "B05.0", "B05.1", "B05.9" ], name: "Measles", urgency: "immediate" },
+      { codes: [ "A01.0" ], name: "Typhoid fever", urgency: "24h" },
+      { codes: [ "B20" ], name: "HIV", urgency: "7d" }
     ]
   end
 end
