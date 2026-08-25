@@ -5,8 +5,8 @@ require_relative "lib/rook/version"
 Gem::Specification.new do |spec|
   spec.name        = "rook"
   spec.version     = Rook::VERSION
-  spec.authors     = ["Lakeraven"]
-  spec.email       = ["eng@lakeraven.com"]
+  spec.authors     = [ "Lakeraven" ]
+  spec.email       = [ "eng@lakeraven.com" ]
   spec.homepage    = "https://github.com/lakeraven/rook"
   spec.summary     = "Population health, quality measures, and clinical reporting engine"
   spec.description = "EHR-agnostic Rails engine for CQL-based quality measure execution, " \

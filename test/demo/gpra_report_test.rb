@@ -25,7 +25,7 @@ class Rook::Demo::GPRAReportTest < Minitest::Test
     uds = uds_result_for("uds-6b-diabetes-hba1c-poor-control")
 
     assert_equal "Diabetes: Poor Glycemic Control (A1c > 9.0%)", gpra.measure.title
-    assert_equal [uds.denominator, uds.numerator, uds.rate], [gpra.denominator, gpra.numerator, gpra.rate]
+    assert_equal [ uds.denominator, uds.numerator, uds.rate ], [ gpra.denominator, gpra.numerator, gpra.rate ]
     assert_equal 20, gpra.denominator
     assert_equal 8, gpra.numerator
     assert_in_delta 0.40, gpra.rate, 0.0001
@@ -35,7 +35,7 @@ class Rook::Demo::GPRAReportTest < Minitest::Test
     gpra = result_for("gpra-controlling-high-blood-pressure")
     uds = uds_result_for("uds-6b-controlling-high-blood-pressure")
 
-    assert_equal [uds.denominator, uds.numerator, uds.rate], [gpra.denominator, gpra.numerator, gpra.rate]
+    assert_equal [ uds.denominator, uds.numerator, uds.rate ], [ gpra.denominator, gpra.numerator, gpra.rate ]
     assert_equal 15, gpra.denominator
     assert_equal 9, gpra.numerator
     assert_in_delta 0.60, gpra.rate, 0.0001

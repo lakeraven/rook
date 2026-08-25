@@ -19,7 +19,7 @@ module Rook
         :tribal_affiliation, :condition_codes, :observations,
         keyword_init: true) do
         def name
-          [given_name, family_name].compact.join(" ")
+          [ given_name, family_name ].compact.join(" ")
         end
 
         def age_on(date)
