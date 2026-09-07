@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "fhir_models"
+
 module Rook
   # Detects whether a diagnosis is a reportable condition per public health
   # surveillance requirements. Supports configurable condition lists by
@@ -7,32 +9,63 @@ module Rook
   #
   # Used by electronic case reporting (eCR) workflows to trigger eICR
   # generation when a reportable condition is diagnosed.
+  #
+  # Input is FHIR-native: #check takes a FHIR::Condition (every coding on
+  # Condition.code is checked — ICD-10-CM, SNOMED CT, etc.) or a bare
+  # FHIR::Coding. Condition lists remain injected configuration.
   class ReportableConditionService
+    # Detection outcome for one diagnosis.
+    Result = Data.define(:reportable, :condition_name, :jurisdiction, :urgency) do
+      def reportable?
+        reportable
+      end
+    end
+
+    # @param conditions [Array<Hash>] entries with :codes (Array<String>),
+    #   :name, :urgency
+    # @param jurisdiction [String]
     def initialize(conditions:, jurisdiction: "US")
       @conditions = conditions
       @jurisdiction = jurisdiction
       @code_index = build_code_index
     end
 
-    # Check whether a diagnosis code is reportable.
-    # Returns { reportable: true/false, condition_name:, jurisdiction:, urgency: }
-    def check(diagnosis_code:, diagnosis_display: nil)
-      return not_reportable_result if diagnosis_code.nil? || diagnosis_code.to_s.strip.empty?
+    # Check whether a diagnosis is reportable.
+    # @param condition [FHIR::Condition, FHIR::Coding]
+    # @return [Result]
+    def check(condition:)
+      codings(condition).each do |coding|
+        code = coding.code.to_s.strip
+        next if code.empty?
 
-      condition = @code_index[diagnosis_code]
-      if condition
-        {
+        entry = @code_index[code]
+        next unless entry
+
+        return Result.new(
           reportable: true,
-          condition_name: condition[:name],
+          condition_name: entry[:name],
           jurisdiction: @jurisdiction,
-          urgency: condition[:urgency]
-        }
-      else
-        not_reportable_result
+          urgency: entry[:urgency]
+        )
       end
+
+      not_reportable_result
     end
 
     private
+
+    def codings(input)
+      case input
+      when FHIR::Condition
+        Array(input.code&.coding)
+      when FHIR::Coding
+        [ input ]
+      when nil
+        []
+      else
+        raise ArgumentError, "condition must be a FHIR::Condition or FHIR::Coding"
+      end
+    end
 
     def build_code_index
       index = {}
@@ -43,7 +76,7 @@ module Rook
     end
 
     def not_reportable_result
-      { reportable: false, condition_name: nil, jurisdiction: @jurisdiction, urgency: nil }
+      Result.new(reportable: false, condition_name: nil, jurisdiction: @jurisdiction, urgency: nil)
     end
   end
 end
