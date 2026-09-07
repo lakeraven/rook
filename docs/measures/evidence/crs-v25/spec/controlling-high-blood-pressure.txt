@@ -1,0 +1,233 @@
+[EVIDENCE EXTRACT — do not edit by hand]
+Source: GPRAMeasuresV250.pdf (CRS 2025 v25.0 National GPRA/GPRAMA Report — Performance Measure List and Definitions, IHS, November 2024; public document, ihs.gov)
+Source sha256: 0026f6e99a1872f7f5e28c7b356ca69a1ab6252c328555537df50302feeca429
+Extraction: pdftotext GPRAMeasuresV250.pdf - | sed -n '5569,5795p'
+Section: 2.6.2 Controlling High Blood Pressure – Million Hearts
+
+Controlling High Blood Pressure – Million Hearts
+
+2.6.2.1
+
+Owner and Contact
+Dr. Dena Wilson; Chris Lamer, PharmD
+
+National GPRA/GPRAMA Report
+Performance Measure List and Definitions
+November 2024
+
+Performance Measure Topics and Definitions
+
+76
+
+IHS Clinical Reporting System
+
+2.6.2.2
+
+Version 25.0
+
+National Reporting
+NATIONAL (included in IHS Performance Report; reported to OMB and Congress)
+
+2.6.2.3
+
+Denominators
+1. GPRA: Million Hearts (National Quality Forum [NQF] 0018): User Population
+patients ages 18 through 85 years diagnosed with hypertension and no
+documented history of ESRD or current diagnosis of pregnancy.
+2. User Population patients ages 18 through 59 years diagnosed with hypertension
+and no documented history of ESRD or current diagnosis of pregnancy.
+3. User Population patients ages 60 through 85 years diagnosed with hypertension
+and no documented history of ESRD or current diagnosis of pregnancy.
+
+2.6.2.4
+
+Numerators
+1. GPRA: Million Hearts (NQF 0018): Patients with blood pressure less than (<)
+140/90, i.e., the systolic value is less than (<) 140 and the diastolic value is less
+than (<) 90 (with Denominator 1).
+2. Patients with blood pressure less than (<) 140/90 (i.e., the systolic value is less
+than 140 and the diastolic value is less than 90) (with Denominator 2).
+3. Patients with blood pressure less than (<) 150/90 (i.e., the systolic value is less
+than 150 and the diastolic value is less than 90) (with Denominator 3).
+
+2.6.2.5
+
+Definitions
+Age
+Age of the patient is calculated as of the end of the Report Period.
+Hypertension
+Diagnosis (POV or Problem List entry where the status is not Inactive or
+Deleted):
+•
+
+ICD-9: 401.*; ICD-10: I10 [BGP HYPERTENSION DXS] during the Report
+Period or the year prior to the Report Period.
+
+•
+
+SNOMED data set PXRM ESSENTIAL HYPERTENSION (Problem List
+only).
+
+National GPRA/GPRAMA Report
+Performance Measure List and Definitions
+November 2024
+
+Performance Measure Topics and Definitions
+
+77
+
+IHS Clinical Reporting System
+
+Version 25.0
+
+ESRD
+Any of the following ever:
+•
+
+CPT 36145 (old code), 36147, 36800, 36810, 36815, 36818, 36819, 36820,
+36821, 36831 through 36833, 50300, 50320, 50340, 50360, 50365, 50370,
+50380, 90918 through 90925 (old codes), 90935, 90937, 90939 (old code),
+90940, 90945, 90947, 90951 through 90970, 90989, 90993, 90997, 90999,
+99512, 3066F, G0257, G9231, M1187, M1188, S2065, S9339 [BGP ESRD
+CPTS]
+
+•
+
+Diagnosis (POV or Problem List entry where the status is not Deleted):
+–
+
+•
+
+ICD-9: 585.6, V42.0, V45.1 (old code), V45.11 V45.12, V56.*; ICD-10:
+I12.0, I13.11, I13.2, N18.5, N18.6, N19., Z48.22, Z49.*, Z91.15, Z94.0,
+Z99.2 [BGP ESRD PMS DXS]
+– SNOMED data set PXRM END STAGE RENAL DISEASE (Problem
+List only)
+Procedure ICD-9: 38.95, 39.27, 39.42, 39.43, 39.53, 39.93 through 39.95,
+54.98, 55.6*; ICD-10 5A1D70Z, 5A1D80Z, 5A1D90Z [BGP ESRD PROCS]
+
+Pregnancy Definition
+Any of the following:
+•
+
+The Currently Pregnant field in Reproductive Factors file set to “Yes” during
+the Report Period.
+
+•
+
+At least one visit during the Report Period, where the primary provider is not
+a CHR (Provider code 53) with any of the following:
+–
+
+Diagnosis (POV or active Problem List entry if added in the past 20
+months) ICD-10: O00.1 through O00.91, O09.00 through O10.019,
+O10.111 through O10.119, O10.211 through O10.219, O10.311 through
+O10.319, O10.411 through O10.419, O10.911 through O10.919, O11.1
+through O15.03, O16.1 through O24.019, O24.111 through O24.119,
+O24.311 through O24.319, O24.41*, O24.811 through O24.819, O24.911
+through O24.919, O25.10 through O25.13, O26.00 through O26.619,
+O26.711 through O26.719, O26.811 through O26.93, O28.*, O29.011
+through O30.93, O31.* through O36.73X9, O36.812 through O48.*,
+O60.0*, O71.00 through O71.03, O88.011 through O88.019, O88.111
+through O88.119, O88.211 through O88.219, O88.311 through O88.319,
+O88.811 through O88.819, O90.3, O91.011 through O91.019, O91.111
+through O91.119, O91.211 through O91.219, O92.011 through O92.019,
+O92.11*, O92.20, O92.29, O98.011 through O98.019, O98.111 through
+O98.119, O98.211 through O98.219, O98.311 through O98.319, O98.411
+through O98.419, O98.511 through O98.519, O98.611 through O98.619,
+O98.711 through O98.719, O98.811 through O98.819, O98.911 through
+
+National GPRA/GPRAMA Report
+Performance Measure List and Definitions
+November 2024
+
+Performance Measure Topics and Definitions
+
+78
+
+IHS Clinical Reporting System
+
+Version 25.0
+
+O98.919, O99.011 through O99.019, O99.111 through O99.119, O99.210
+through O99.213, O99.280 through O99.283, O99.310 through O99.313,
+O99.320 through O99.323, O99.330 through O99.333, O99.340 through
+O99.343, O99.350 through O99.353, O99.411 through O99.419, O99.511
+through O99.519, O99.611 through O99.619, O99.711 through O99.719,
+O99.810, O99.820, O99.830, O99.840 through O99.843, O99.89,
+O9A.111 through O9A.119, O9A.211 through O9A.219, O9A.311
+through O9A.319, O9A.411 through O9A.419, O9A.511 through
+O9A.519, Z33.1, Z33.3, Z34.*, Z36.* [BGP PREGNANCY DIAGNOSES
+2]
+– CPT 59000-59076, 59300, 59320, 59400-59426, 59510, 59514, 59610,
+59612, 59618, 59620, 76801-76828 [BGP PREGNANCY CPT CODES]
+– Miscarriage or abortion (see definitions below)
+Pharmacy-only visits (clinic code 39) will not count toward this visit. If the patient
+has more than one pregnancy-related visit during the Report Period, CRS will use the
+first visit in the Report Period.
+•
+
+Miscarriage definition:
+
+•
+
+– POV ICD-10: O03.9 [BGP MISCARRIAGE/ABORTION DXS]
+– CPT 59812, 59820, 59821, 59830 [BGP CPT MISCARRIAGE]
+Abortion definition:
+–
+
+POV ICD-10: O00.* through O03.89, O04.*, Z33.2 [BGP
+MISCARRIAGE/ABORTION DXS]
+– CPT 59100, 59120, 59130, 59136, 59150, 59151, 59840, 59841, 59850,
+59851, 59852, 59855, 59856, 59857, S2260 through S2267 [BGP CPT
+ABORTION]
+– Procedure ICD-10: 0WHR73Z, 0WHR7YZ, 10A0***, 3E1K78Z,
+3E1K88Z [BGP ABORTION PROCEDURES]
+
+BP Values
+Exclusions: When calculating all BPs, the following visits will be excluded:
+•
+
+Service Category H (Hospitalization), I (In Hospital), S (Day Surgery), or
+O (Observation)
+
+•
+
+Clinic code 23 (Surgical), 30 (ER), 44 (Day Surgery), 79 (Triage), C1
+(Neurosurgery), or D4 (Anesthesiology)
+
+CRS uses the last blood pressure documented during the Report Period. If a
+patient has more than one blood pressure documented on the same day, CRS will
+first look for a blood pressure less than (<) 140/90 on that day, and if not found,
+will look for a blood pressure less than (<) 150/90.
+National GPRA/GPRAMA Report
+Performance Measure List and Definitions
+November 2024
+
+Performance Measure Topics and Definitions
+
+79
+
+IHS Clinical Reporting System
+
+2.6.2.6
+
+Version 25.0
+
+GPRA 2025 Target
+During GPRA Year 2025, achieve the target rate of 48.2% for the proportion of
+patients with blood pressure less than (<) 140/90.
+
+2.6.2.7
+
+Patient Lists
+•
+
+List of hypertensive patients with BP less than (<) 140/90.
+
+•
+
+List of hypertensive patients with BP greater than or equal to (≥) 140/90.
+
+2.6.3
+

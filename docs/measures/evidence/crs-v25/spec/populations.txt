@@ -1,0 +1,125 @@
+[EVIDENCE EXTRACT — do not edit by hand]
+Source: GPRAMeasuresV250.pdf (CRS 2025 v25.0 National GPRA/GPRAMA Report — Performance Measure List and Definitions, IHS, November 2024; public document, ihs.gov)
+Source sha256: 0026f6e99a1872f7f5e28c7b356ca69a1ab6252c328555537df50302feeca429
+Extraction: pdftotext GPRAMeasuresV250.pdf - | sed -n '486,604p'
+Section: 1.2.2 Active Clinical Population; 1.2.3 User Population
+
+Active Clinical Population
+
+1.2.2.1
+
+National GPRA/GPRAMA Reporting
+
+1.2.2.2
+
+•
+
+Must have two visits to medical clinics in the past three years prior to the end of
+the Report Period. Chart reviews and telephone calls from these clinics do not
+count; the visits must be face to face. At least one visit must be to a core medical
+clinic. Refer to the Clinical Reporting System (CRS) for FY2025 Clinical
+Measures User Manual for listing of these clinics.
+
+•
+
+Must be alive on the last day of the Report Period.
+
+•
+
+Must be American Indian/Alaska Native (AI/AN); defined as Beneficiary 01.
+
+•
+
+Must reside in a community specified in the site’s GPRA community taxonomy,
+defined as all communities of residence in the defined Purchased and Referred
+Care (PRC) catchment area.
+
+Local Reports
+•
+
+Must have two visits to medical clinics in the past three years prior to the end of
+the Report Period. Chart reviews and telephone calls from these clinics do not
+count; the visits must be face to face. At least one visit must be to a core medical
+clinic. Refer to the Clinical Reporting System for FY2025 Clinical Measures User
+Manual for listing of these clinics.
+
+•
+
+Must be alive on the last day of the Report Period.
+
+•
+
+User defines population type: AI/AN patients only, non-AI/AN, or both.
+
+•
+
+User defines general population: single community, group of multiple
+communities (community taxonomy), user-defined list of patients (patient panel),
+or all patients regardless of community of residence.
+
+National GPRA/GPRAMA Report
+Performance Measure List and Definitions
+November 2024
+
+CRS 2025 National GPRA/GPRAMA Report
+
+6
+
+IHS Clinical Reporting System
+
+Version 25.0
+
+1.2.3
+
+User Population
+
+1.2.3.1
+
+National GPRA/GPRAMA Reporting
+
+1.2.3.2
+
+•
+
+Must have been seen at least once in the three years prior to the end of the Report
+Period, regardless of the clinic type, and the visit must be either ambulatory
+(including day surgery or observation), a hospitalization or a telemedicine visit;
+the rest of the service categories are excluded.
+
+•
+
+Must be alive on the last day of the Report Period.
+
+•
+
+Must be AI/AN; defined as Beneficiary 01.
+
+•
+
+Must reside in a community specified in the site’s GPRA community taxonomy,
+defined as all communities of residence in the defined PRC catchment area.
+
+Local Reports
+•
+
+Must have been seen at least once in the three years prior to the end of the Report
+Period, regardless of the clinic type, and the visit must be either ambulatory
+(including day surgery or observation) or a hospitalization; the rest of the service
+categories are excluded.
+
+•
+
+Must be alive on the last day of the Report Period.
+
+•
+
+User defines population type: AI/AN patients only, non-AI/AN, or both.
+
+•
+
+User defines general population: single community, group of multiple
+communities (community taxonomy), user-defined list of patients (patient panel),
+or all patients regardless of community of residence.
+
+1.2.4
+
