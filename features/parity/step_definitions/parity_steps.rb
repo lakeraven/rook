@@ -33,14 +33,14 @@ module ParityDriver
 
   # -- Canonical builders (VOCABULARY.md / fhir-mapping.md) -------------------
 
-  def build_patient(name, age, sex)
+  def build_patient(name, age, sex, beneficiary: "01", community: true)
     resources << {
       "resourceType" => "Patient", "id" => name,
       "gender" => sex,
       "birthDate" => ((period_end << (12 * age)) - 183).iso8601,
       "extension" => [
-        { "url" => T::IHS_BENEFICIARY_EXT, "valueCode" => "01" },
-        { "url" => T::GPRA_COMMUNITY_EXT, "valueBoolean" => true }
+        { "url" => T::IHS_BENEFICIARY_EXT, "valueCode" => beneficiary },
+        { "url" => T::GPRA_COMMUNITY_EXT, "valueBoolean" => community }
       ]
     }
     add_visit(name, period_start << 6)
@@ -69,8 +69,8 @@ module ParityDriver
     }
   end
 
-  def add_problem_list(patient, system, code, status, entered)
-    resources << {
+  def add_problem_list(patient, system, code, status, entered, onset: nil)
+    entry = {
       "resourceType" => "Condition", "id" => "cond-#{next_id}",
       "category" => [ { "coding" => [ { "code" => "problem-list-item" } ] } ],
       "clinicalStatus" => { "coding" => [ { "code" => status.downcase } ] },
@@ -78,6 +78,8 @@ module ParityDriver
       "subject" => { "reference" => "Patient/#{patient}" },
       "recordedDate" => entered.iso8601
     }
+    entry["onsetDateTime"] = onset.iso8601 if onset
+    resources << entry
   end
 
   def add_observation(patient, extra)
@@ -127,6 +129,14 @@ Given(/^a qualifying GPRA (diabetic|hypertensive) patient "([^"]*)"$/) do |kind,
   kind == "diabetic" ? add_diabetic_macro(patient) : add_hypertensive_macro(patient)
 end
 
+Given(/^an otherwise-qualifying patient "([^"]*)" aged (\d+) with beneficiary class "([^"]*)"$/) do |patient, age, beneficiary|
+  build_patient(patient, age.to_i, "female", beneficiary: beneficiary)
+end
+
+Given(/^an otherwise-qualifying patient "([^"]*)" aged (\d+) outside the GPRA community taxonomy$/) do |patient, age|
+  build_patient(patient, age.to_i, "female", community: false)
+end
+
 # -- Visits -------------------------------------------------------------------
 
 Given(/^"([^"]*)" has (\d+) ambulatory visits? during the report period$/) do |patient, count|
@@ -141,6 +151,14 @@ end
 
 Given(/^"([^"]*)" has a diabetes Problem List entry with status "([^"]*)" entered (#{DATE})$/) do |patient, status, date|
   add_problem_list(patient, T::ICD10, "E11.9", status, Date.parse(date))
+end
+
+Given(/^"([^"]*)" has a diabetes Problem List entry with status "([^"]*)" onset (#{DATE}) entered (#{DATE})$/) do |patient, status, onset, entered|
+  add_problem_list(patient, T::ICD10, "E11.9", status, Date.parse(entered), onset: Date.parse(onset))
+end
+
+Given(/^"([^"]*)" has a hypertension Problem List entry with status "([^"]*)" entered (#{DATE})$/) do |patient, status, date|
+  add_problem_list(patient, T::ICD10, "I10", status, Date.parse(date))
 end
 
 Given(/^"([^"]*)" has a hypertension POV recorded (#{DATE})$/) do |patient, date|
@@ -164,6 +182,10 @@ end
 
 Given(/^"([^"]*)" has a mood disorder POV recorded (#{DATE})$/) do |patient, date|
   add_pov(patient, T::ICD10, "F32.9", Date.parse(date))
+end
+
+Given(/^"([^"]*)" has a depression screening POV recorded (#{DATE})$/) do |patient, date|
+  add_pov(patient, T::ICD10, "Z13.31", Date.parse(date))
 end
 
 # -- Labs, CPT evidence, measurements -----------------------------------------
@@ -215,6 +237,14 @@ end
 
 Given(/^"([^"]*)" has no BP reading during the report period$/) do |_patient|
   # Absence — seed nothing.
+end
+
+Given(/^"([^"]*)" has an EPDS measurement recorded (#{DATE})$/) do |patient, date|
+  add_observation(patient,
+    "category" => [ { "coding" => [ { "code" => "survey" } ] } ],
+    "code" => { "coding" => [ { "system" => T::MEASUREMENT_TYPE_SYSTEM, "code" => "EPDS" } ] },
+    "effectiveDateTime" => date,
+    "valueQuantity" => { "value" => 6 })
 end
 
 Given(/^"([^"]*)" has a PHQ-9 measurement recorded (#{DATE})$/) do |patient, date|

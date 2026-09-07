@@ -27,6 +27,29 @@ Feature: Diabetes: Glycemic Control (CRS v25 §2.1.2)
     When the National GPRA report is run
     Then "P-ELDER" is in the "Diabetes: Glycemic Control" GPRA denominator
 
+  Scenario: Beneficiary class other than 01 keeps a patient out of the GPRA denominator
+    Given an otherwise-qualifying patient "P-NONBEN" aged 50 with beneficiary class "99"
+    And "P-NONBEN" has a diabetes POV first recorded 2018-06-15
+    And "P-NONBEN" has 2 ambulatory visits during the report period
+    And "P-NONBEN" has a diabetes Problem List entry with status "Active" entered 2018-06-15
+    When the National GPRA report is run
+    Then "P-NONBEN" is not in the "Diabetes: Glycemic Control" GPRA denominator
+
+  Scenario: Residence outside the GPRA community taxonomy keeps a patient out
+    Given an otherwise-qualifying patient "P-NONCOMM" aged 50 outside the GPRA community taxonomy
+    And "P-NONCOMM" has a diabetes POV first recorded 2018-06-15
+    And "P-NONCOMM" has 2 ambulatory visits during the report period
+    And "P-NONCOMM" has a diabetes Problem List entry with status "Active" entered 2018-06-15
+    When the National GPRA report is run
+    Then "P-NONCOMM" is not in the "Diabetes: Glycemic Control" GPRA denominator
+
+  Scenario: Problem List onset prior to the period qualifies even when entered later
+    Given a User Population patient "P-ONSET" aged 50 at period end
+    And "P-ONSET" has 2 ambulatory visits during the report period
+    And "P-ONSET" has a diabetes Problem List entry with status "Active" onset 2018-06-15 entered 2025-03-01
+    When the National GPRA report is run
+    Then "P-ONSET" is in the "Diabetes: Glycemic Control" GPRA denominator
+
   Scenario: Diabetes diagnosed during the period does not qualify
     Given a User Population patient "P-NEW" aged 50 at period end
     And "P-NEW" has a diabetes POV first recorded 2025-03-01
@@ -77,6 +100,13 @@ Feature: Diabetes: Glycemic Control (CRS v25 §2.1.2)
     And "P-SAMEDAY" has an A1c lab result of 10.1 resulted 2025-08-02
     When the National GPRA report is run
     Then "P-SAMEDAY" is in the "Poor Glycemic Control" GPRA numerator
+
+  Scenario: CPT 3044F counts as good control, not poor control
+    Given a qualifying GPRA diabetic patient "P-CPTGOOD"
+    And "P-CPTGOOD" has CPT "3044F" recorded 2025-06-20
+    When the National GPRA report is run
+    Then "P-CPTGOOD" is in the "Good Glycemic Control" numerator
+    And "P-CPTGOOD" is not in the "Poor Glycemic Control" GPRA numerator
 
   Scenario: CPT 3046F counts as A1c greater than 9
     Given a qualifying GPRA diabetic patient "P-CPT"

@@ -28,6 +28,12 @@ Feature: Controlling High Blood Pressure — Million Hearts (CRS v25 §2.6.2)
     When the National GPRA report is run
     Then "H-OLD" is not in the "Controlling High Blood Pressure" GPRA denominator
 
+  Scenario: Hypertension via an active Problem List entry qualifies without a POV
+    Given a User Population patient "H-PL" aged 62 at period end
+    And "H-PL" has a hypertension Problem List entry with status "Active" entered 2025-02-01
+    When the National GPRA report is run
+    Then "H-PL" is in the "Controlling High Blood Pressure" GPRA denominator
+
   Scenario: ESRD history ever excludes the patient
     Given a User Population patient "H-ESRD" aged 62 at period end
     And "H-ESRD" has a hypertension POV recorded 2025-02-01
@@ -62,9 +68,11 @@ Feature: Controlling High Blood Pressure — Million Hearts (CRS v25 §2.6.2)
     Then "H-EDGE" is not in the "Controlling High Blood Pressure" GPRA numerator
 
   Scenario: Same-day readings — the controlled reading is preferred
+    # Controlled reading seeded FIRST so last-seeded-wins cannot masquerade
+    # as the spec's controlled-preference tie-break.
     Given a qualifying GPRA hypertensive patient "H-SAMEDAY"
-    And "H-SAMEDAY" has a BP reading of 148/94 on 2025-09-05 at an ambulatory visit
     And "H-SAMEDAY" has a BP reading of 132/84 on 2025-09-05 at an ambulatory visit
+    And "H-SAMEDAY" has a BP reading of 148/94 on 2025-09-05 at an ambulatory visit
     When the National GPRA report is run
     Then "H-SAMEDAY" is in the "Controlling High Blood Pressure" GPRA numerator
 

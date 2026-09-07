@@ -38,7 +38,7 @@ module Rook
       A1C_CPTS = %w[83036 83037 3044F 3045F 3046F 3047F 3051F 3052F].freeze
 
       # [BGP ESRD PMS DXS] — trio subset; full set arrives with #83.
-      ESRD_ICD10 = %w[I12.0 I13.11 I13.2 N18.5 N18.6 N19. Z48.22 Z91.15 Z94.0 Z99.2].freeze
+      ESRD_ICD10 = %w[I12.0 I13.11 I13.2 N18.5 N18.6 N19 Z48.22 Z91.15 Z94.0 Z99.2].freeze
       ESRD_ICD10_PREFIXES = %w[Z49].freeze
 
       # Pregnancy status (Reproductive Factors mapping — see fhir-mapping.md).

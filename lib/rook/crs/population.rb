@@ -108,7 +108,7 @@ module Rook
         qualifying = encounters.any? do |e|
           klass = e.dig("class", "code")
           date = encounter_date(e)
-          %w[AMB IMP VR].include?(klass) && date && window.cover?(date)
+          %w[AMB SS OBSENC IMP VR].include?(klass) && date && window.cover?(date)
         end
         qualifying && alive_on?(period.end) && beneficiary_class == "01" && gpra_community?
       end
@@ -140,7 +140,10 @@ module Rook
       # DM PL entries still count (the DM rule excludes only Deleted).
       def first_diabetes_evidence_date
         dates = povs.select { |c| coded?(c, :diabetes_code?) }.filter_map { |c| condition_date(c) }
-        dates += problem_list.select { |c| coded?(c, :diabetes_code?) }.filter_map { |c| condition_date(c) }
+        # Problem List qualifies on Date of Onset OR Date Entered prior to
+        # the period (§2.1.2.5) — the EARLIEST of the two, not entered-first.
+        dates += problem_list.select { |c| coded?(c, :diabetes_code?) }
+                             .filter_map { |c| problem_list_dates(c).min }
         dates.min
       end
 
@@ -310,6 +313,10 @@ module Rook
 
       def condition_date(condition)
         parse_date(condition["recordedDate"] || condition["onsetDateTime"])
+      end
+
+      def problem_list_dates(condition)
+        [ condition["recordedDate"], condition["onsetDateTime"] ].compact.map { |d| parse_date(d) }
       end
 
       def encounter_date(encounter)

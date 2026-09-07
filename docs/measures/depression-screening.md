@@ -41,6 +41,14 @@ diagnosed; screened in a Behavioral Health clinic (codes C4, C9, 14, 43, 48).
 - CRS splits 12–17 / 18+ and reports GPRA on **User Population** (not Active
   Clinical) — the Active Clinical variants are the non-GPRA denominators here.
 
+## Engine gaps (loud)
+
+- **BHS POV 14/15** as mood-disorder evidence is NOT implemented (ICD-10 mood
+  POVs only); no scenario exists. BHS-side mood diagnoses are missed until then.
+- **PCC V Exam 36** is represented only via the BH exam mapping; whether a
+  PCC-side exam-36 record (and its refusal coding) follows the same P/N rule is
+  the open question below — not implemented, not invented.
+
 ## Open questions (differential probing, #99)
 
 1. Full BH exam result-code semantics (P/N/R and anything else).

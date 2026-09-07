@@ -37,6 +37,12 @@ BP **< 140/90** — systolic < 140 AND diastolic < 90.
   behavior. Fenced as demo.
 - Hypertension dx **window** (period + prior year) and **status not Inactive** are
   easy to miss — both spec-explicit.
+- **ENGINE GAP (loud):** the pregnancy exclusion is implemented via the
+  Reproductive Factors path only; the spec's second path — a qualifying visit
+  with a pregnancy POV where the primary provider is not a CHR (code 53) — is
+  NOT implemented and has no scenario. A pregnant patient recorded only by
+  POV is wrongly retained in the denominator until this lands (needs the O-code
+  taxonomy from #83 plus a provider-role mapping).
 
 ## Open questions (differential probing, #99)
 

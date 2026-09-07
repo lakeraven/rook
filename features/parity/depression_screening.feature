@@ -29,6 +29,24 @@ Feature: Depression Screening (CRS v25 §2.5.4)
     When the National GPRA report is run
     Then "D-PHQ" is in the "Depression Screening 18+" GPRA numerator
 
+  Scenario: A screening POV counts as screening
+    Given a User Population patient "D-POV" aged 40 at period end
+    And "D-POV" has a depression screening POV recorded 2025-04-11
+    When the National GPRA report is run
+    Then "D-POV" is in the "Depression Screening 18+" GPRA numerator
+
+  Scenario: A screening CPT counts as screening
+    Given a User Population patient "D-CPT" aged 40 at period end
+    And "D-CPT" has CPT "G0444" recorded 2025-05-06
+    When the National GPRA report is run
+    Then "D-CPT" is in the "Depression Screening 18+" GPRA numerator
+
+  Scenario: An EPDS measurement counts as screening
+    Given a User Population patient "D-EPDS" aged 40 at period end
+    And "D-EPDS" has an EPDS measurement recorded 2025-08-19
+    When the National GPRA report is run
+    Then "D-EPDS" is in the "Depression Screening 18+" GPRA numerator
+
   Scenario: A mood disorder diagnosis on two visits counts without any screening
     Given a User Population patient "D-MOOD" aged 40 at period end
     And "D-MOOD" has a mood disorder POV recorded 2025-03-04
@@ -46,6 +64,12 @@ Feature: Depression Screening (CRS v25 §2.5.4)
   # M-verified path: BH exam 36 counts only with result P or N (^AMHREC check
   # in BGPXD25/BGPXPC11); a PCC V Exam refusal variant is an open question in
   # the dossier and gets its own scenario once the M pass settles it.
+  Scenario: A BH screening exam with a positive result counts
+    Given a User Population patient "D-BHPOS" aged 40 at period end
+    And "D-BHPOS" has a BH depression screening exam recorded 2025-07-10 with result "P"
+    When the National GPRA report is run
+    Then "D-BHPOS" is in the "Depression Screening 18+" GPRA numerator
+
   Scenario: A refused BH screening exam does not count
     Given a User Population patient "D-REFUSED" aged 40 at period end
     And "D-REFUSED" has a BH depression screening exam recorded 2025-07-10 with result "R"
