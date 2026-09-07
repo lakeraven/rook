@@ -29,9 +29,9 @@ module Rook
       SUPPLEMENTAL_SOURCE = Rook::SourceDescriptor.new(
         id: "demo-rpms-supplemental", platform: :rpms, channel: :supplemental)
 
-      EPIC_PRIMARY_SOURCE = Rook::Ingest::SourceDescriptor.new(
+      EPIC_PRIMARY_SOURCE = Rook::SourceDescriptor.new(
         id: "demo-epic-fhir", platform: :epic, channel: :primary_fhir)
-      EPIC_SUPPLEMENTAL_SOURCE = Rook::Ingest::SourceDescriptor.new(
+      EPIC_SUPPLEMENTAL_SOURCE = Rook::SourceDescriptor.new(
         id: "demo-epic-supplemental", platform: :epic, channel: :supplemental)
 
       # A single synthetic patient with its linked Conditions, Observations,
