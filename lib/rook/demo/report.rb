@@ -46,11 +46,13 @@ module Rook
       end
 
       def initialize(population:, framework: "UDS Table 6B (HRSA)",
-        period: DEFAULT_PERIOD, measures: self.class.uds_measures)
+        period: DEFAULT_PERIOD, measures: self.class.uds_measures,
+        clinic_label: CLINIC_LABEL)
         @population = population
         @framework = framework
         @period = ReportingPeriod.wrap(period)
         @measures = measures
+        @clinic_label = clinic_label
       end
 
       def self.uds_measures
@@ -68,19 +70,18 @@ module Rook
         ]
       end
 
-      attr_reader :period, :framework
-
-      def clinic_label
-        CLINIC_LABEL
-      end
+      attr_reader :period, :framework, :clinic_label
 
       def patient_count
         @population.patients.size
       end
 
-      # One Rook::MeasureResult per measure (MeasureReport-backed).
+      # One Rook::MeasureResult per measure (MeasureReport-backed). The clinic
+      # label rides on each MeasureReport as its reporter identity.
       def results
-        @results ||= @measures.map { |measure| measure.evaluate(@population.patients, @period) }
+        @results ||= @measures.map do |measure|
+          measure.evaluate(@population.patients, @period, reporter_display: clinic_label)
+        end
       end
     end
   end

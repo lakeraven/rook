@@ -42,8 +42,11 @@ module Rook
         end
 
         def in_numerator?(patient, period)
-          latest = latest_hba1c(patient, period)
-          latest.nil? || latest.value > POOR_CONTROL_THRESHOLD
+          value = latest_hba1c(patient, period)&.value
+          # An Observation without a numeric result (e.g. dataAbsentReason)
+          # counts the same as no HbA1c recorded: no usable result -> poor
+          # control (numerator), per the measure's missing-result rule.
+          value.nil? || value > POOR_CONTROL_THRESHOLD
         end
 
         # For an inverse measure, being in the numerator is the gap.
@@ -55,6 +58,7 @@ module Rook
         def gap_reason(patient, period)
           latest = latest_hba1c(patient, period)
           return "No HbA1c recorded in measurement period" if latest.nil?
+          return format("HbA1c recorded %s has no usable result", latest.effective_date) if latest.value.nil?
 
           format("Most recent HbA1c %.1f%% (%s) exceeds 9%%", latest.value, latest.effective_date)
         end

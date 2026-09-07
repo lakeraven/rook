@@ -19,6 +19,12 @@ module Rook
     end
 
     # Membership test; override when a backend can answer without expanding.
+    #
+    # Engines should prefer #include? for membership checks so a terminology
+    # backend can answer via ValueSet/$validate-code without a full $expand.
+    # The demo measures currently expand via #codes only because the demo
+    # patient model matches against flat code arrays; the production engine
+    # (rook#59/#63) should route membership through this method.
     def include?(value_set_url, code)
       codes(value_set_url).include?(code)
     end

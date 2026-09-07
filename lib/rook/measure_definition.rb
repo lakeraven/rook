@@ -53,8 +53,10 @@ module Rook
     end
 
     # Evaluates the measure over an enumerable of patients and returns the
-    # canonical Rook::MeasureResult (MeasureReport-backed).
-    def evaluate(patients, period)
+    # canonical Rook::MeasureResult (MeasureReport-backed). +reporter_display+
+    # (optional) names the reporting organization on the MeasureReport so
+    # reports from different reporters stay distinguishable.
+    def evaluate(patients, period, reporter_display: nil)
       period = ReportingPeriod.wrap(period)
       gaps = care_gaps(patients, period).map do |patient|
         MeasureResult::CareGap.new(patient: patient, reason: gap_reason(patient, period))
@@ -66,7 +68,8 @@ module Rook
         denominator: denominator(patients, period).size,
         numerator: numerator(patients, period).size,
         care_gaps: gaps,
-        improvement_notation: improvement_notation
+        improvement_notation: improvement_notation,
+        reporter_display: reporter_display
       )
     end
 

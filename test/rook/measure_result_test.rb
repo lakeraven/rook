@@ -8,6 +8,11 @@ require "test_helper"
 # only — the summary report carries no subject-level data (mrt-2).
 class Rook::MeasureResultTest < Minitest::Test
   FakeMeasure = Struct.new(:id, :title)
+  FakeInverseMeasure = Struct.new(:id, :title) do
+    def improvement_notation
+      :decrease
+    end
+  end
   FakePatient = Struct.new(:id, :name)
 
   def setup
@@ -57,14 +62,41 @@ class Rook::MeasureResultTest < Minitest::Test
   end
 
   def test_summary_report_carries_no_contained_or_subject_level_data
-    assert_empty @result.measure_report.contained
+    report = @result.measure_report
+
+    assert_empty report.contained
+    assert_empty report.evaluatedResource
+    report.group.each do |group|
+      group.population.each { |population| assert_nil population.subjectResults }
+    end
   end
 
-  def test_improvement_notation_defaults_to_increase
+  # FakeMeasure declares no improvement notation, so the seam falls back to
+  # :increase (the FHIR default direction).
+  def test_improvement_notation_defaults_to_increase_when_the_measure_declares_none
     coding = @result.measure_report.improvementNotation.coding.first
 
     assert_equal "http://terminology.hl7.org/CodeSystem/measure-improvement-notation", coding.system
     assert_equal "increase", coding.code
+  end
+
+  def test_improvement_notation_defaults_from_the_measure_declaration
+    inverse_measure = FakeInverseMeasure.new("demo-inverse-measure", "Demo Inverse Measure")
+    result = Rook::MeasureResult.from_counts(
+      measure: inverse_measure, period: @period, denominator: 20, numerator: 8
+    )
+
+    assert_equal "decrease", result.measure_report.improvementNotation.coding.first.code
+  end
+
+  def test_explicit_improvement_notation_overrides_the_measure_declaration
+    inverse_measure = FakeInverseMeasure.new("demo-inverse-measure", "Demo Inverse Measure")
+    result = Rook::MeasureResult.from_counts(
+      measure: inverse_measure, period: @period, denominator: 20, numerator: 8,
+      improvement_notation: :increase
+    )
+
+    assert_equal "increase", result.measure_report.improvementNotation.coding.first.code
   end
 
   def test_improvement_notation_decrease_for_inverse_measures
@@ -117,5 +149,59 @@ class Rook::MeasureResultTest < Minitest::Test
 
   def test_measure_report_is_valid_fhir
     assert_empty @result.measure_report.validate
+  end
+
+  def test_reporter_display_lands_as_the_report_reporter
+    result = Rook::MeasureResult.from_counts(
+      measure: @measure, period: @period, denominator: 20, numerator: 8,
+      reporter_display: "Example Clinic (synthetic)"
+    )
+
+    assert_equal "Example Clinic (synthetic)", result.measure_report.reporter.display
+    assert_empty result.measure_report.validate
+  end
+
+  def test_reporter_is_absent_when_no_reporter_display_given
+    assert_nil @result.measure_report.reporter
+  end
+
+  def test_rejects_wrapping_a_report_without_population_counts
+    bare = FHIR::MeasureReport.new(status: "complete", type: "summary")
+
+    error = assert_raises(ArgumentError) do
+      Rook::MeasureResult.new(measure: @measure, period: @period, measure_report: bare)
+    end
+    assert_match(/group/, error.message)
+  end
+
+  def test_rejects_wrapping_a_report_missing_a_numerator_population
+    report = FHIR::MeasureReport.new(
+      status: "complete", type: "summary",
+      group: [ {
+        population: [ { code: { coding: [ { code: "denominator" } ] }, count: 10 } ]
+      } ]
+    )
+
+    error = assert_raises(ArgumentError) do
+      Rook::MeasureResult.new(measure: @measure, period: @period, measure_report: report)
+    end
+    assert_match(/numerator/, error.message)
+  end
+
+  def test_rejects_a_nonzero_denominator_report_without_a_measure_score
+    report = FHIR::MeasureReport.new(
+      status: "complete", type: "summary",
+      group: [ {
+        population: [
+          { code: { coding: [ { code: "denominator" } ] }, count: 10 },
+          { code: { coding: [ { code: "numerator" } ] }, count: 4 }
+        ]
+      } ]
+    )
+
+    error = assert_raises(ArgumentError) do
+      Rook::MeasureResult.new(measure: @measure, period: @period, measure_report: report)
+    end
+    assert_match(/measureScore/, error.message)
   end
 end

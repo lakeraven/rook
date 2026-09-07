@@ -49,6 +49,12 @@ class Rook::Demo::UDSReportTest < Minitest::Test
     assert_equal "increase", result.measure_report.improvementNotation.coding.first.code
   end
 
+  def test_results_carry_the_clinic_label_as_the_report_reporter
+    @report.results.each do |result|
+      assert_equal @report.clinic_label, result.measure_report.reporter.display
+    end
+  end
+
   def test_diabetes_care_gap_worklist_matches_numerator
     result = result_for("uds-6b-diabetes-hba1c-poor-control")
 

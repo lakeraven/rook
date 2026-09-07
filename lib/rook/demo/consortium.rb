@@ -101,7 +101,8 @@ module Rook
           clinic = ConsortiumClinic.build(profile)
           report = Report.new(population: clinic.population,
             framework: "IHS CRS / GPRA National Clinical Measures",
-            measures: Report.gpra_measures)
+            measures: Report.gpra_measures,
+            clinic_label: profile.name)
           ClinicReport.new(clinic: clinic, report: report)
         end
       end
@@ -134,7 +135,8 @@ module Rook
             period: @clinic_reports.first.report.period,
             denominator: results.sum(&:denominator),
             numerator: results.sum(&:numerator),
-            improvement_notation: measure.improvement_notation
+            improvement_notation: measure.improvement_notation,
+            reporter_display: NAME
           )
           Rollup.new(result: result, regime: REGIME_BY_MEASURE_ID.fetch(measure.id, "GPRA (legacy)"))
         end

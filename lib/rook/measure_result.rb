@@ -39,9 +39,19 @@ module Rook
     #
     # The signature will grow — exclusions, initial-population, stratifiers,
     # and external measure canonicals are tracked in rook#59/#92.
+    #
+    # +improvement_notation+ defaults from the measure's own declaration
+    # (#improvement_notation, when the measure responds to it), falling back
+    # to :increase; an explicit argument overrides the measure.
+    #
+    # +reporter_display+ (optional) names the reporting organization — e.g. a
+    # clinic label or a consortium label — as MeasureReport.reporter (a
+    # display-only Organization-style Reference), so reports for the same
+    # measure and period from different reporters stay distinguishable.
     def self.from_counts(measure:, period:, denominator:, numerator:, care_gaps: [],
-      improvement_notation: :increase)
+      improvement_notation: nil, reporter_display: nil)
       validate_counts!(denominator, numerator)
+      improvement_notation ||= default_improvement_notation(measure)
       unless IMPROVEMENT_NOTATIONS.include?(improvement_notation)
         raise ArgumentError, "improvement_notation must be :increase or :decrease, got #{improvement_notation.inspect}"
       end
@@ -57,7 +67,7 @@ module Rook
       # entirely (the #rate reader projects an absent score as 0.0).
       group[:measureScore] = { value: (numerator.to_f / denominator).round(4) } if denominator.positive?
 
-      report = FHIR::MeasureReport.new(
+      attributes = {
         status: "complete",
         type: "summary",
         measure: "#{MEASURE_CANONICAL_BASE}/#{measure.id}",
@@ -66,10 +76,17 @@ module Rook
           coding: [ { system: IMPROVEMENT_NOTATION_SYSTEM, code: improvement_notation.to_s } ]
         },
         group: [ group ]
-      )
+      }
+      attributes[:reporter] = { display: reporter_display } if reporter_display
+      report = FHIR::MeasureReport.new(attributes)
 
       new(measure: measure, period: period, measure_report: report, care_gaps: care_gaps)
     end
+
+    def self.default_improvement_notation(measure)
+      measure.respond_to?(:improvement_notation) ? measure.improvement_notation : :increase
+    end
+    private_class_method :default_improvement_notation
 
     def self.validate_counts!(denominator, numerator)
       unless denominator.is_a?(Integer) && denominator >= 0
@@ -87,11 +104,18 @@ module Rook
     end
     private_class_method :population_entry
 
+    # Wraps an already-built summary MeasureReport. The report must carry the
+    # canonical shape the scalar readers project from: a group with integer
+    # denominator and numerator population counts, and a measureScore whenever
+    # the denominator is nonzero (a zero denominator legitimately omits the
+    # score). Anything else raises ArgumentError — loudly, instead of the
+    # readers silently coercing a wrong-shape report to 0 / 0.0.
     def initialize(measure:, period:, measure_report:, care_gaps: [])
       @measure = measure
       @period = period
       @measure_report = measure_report
       @care_gaps = care_gaps.freeze
+      validate_report_shape!
     end
 
     attr_reader :measure, :period, :measure_report, :care_gaps
@@ -117,15 +141,35 @@ module Rook
 
     private
 
+    def validate_report_shape!
+      raise ArgumentError, "MeasureReport must have a group" if group.nil?
+
+      %w[denominator numerator].each do |code|
+        count = raw_population_count(code)
+        unless count.is_a?(Integer)
+          raise ArgumentError, "MeasureReport group must carry an integer #{code} population count"
+        end
+      end
+      return unless population_count("denominator").positive?
+      return unless group.measureScore&.value.nil?
+
+      raise ArgumentError, "MeasureReport with a nonzero denominator must carry a measureScore"
+    end
+
     def group
       measure_report.group.first
     end
 
     def population_count(code)
+      # Guaranteed an Integer by #validate_report_shape!.
+      raw_population_count(code)
+    end
+
+    def raw_population_count(code)
       population = group&.population&.find do |entry|
         entry.code&.coding&.any? { |coding| coding.code == code }
       end
-      population&.count.to_i
+      population&.count
     end
   end
 end

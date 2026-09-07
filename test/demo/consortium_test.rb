@@ -24,6 +24,17 @@ class Rook::Demo::ConsortiumTest < Minitest::Test
     assert_equal "decrease", coding.code
   end
 
+  def test_clinic_reports_and_rollup_are_distinguishable_by_reporter
+    @consortium.clinic_reports.each do |cr|
+      cr.report.results.each do |result|
+        assert_equal cr.name, result.measure_report.reporter.display
+      end
+    end
+    @consortium.rollup.each do |rollup|
+      assert_equal Rook::Demo::Consortium::NAME, rollup.result.measure_report.reporter.display
+    end
+  end
+
   def test_consortium_has_three_clinics
     assert_equal 3, @consortium.clinic_count
     assert_equal 3, @consortium.clinic_reports.size

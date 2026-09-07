@@ -61,8 +61,17 @@ module Rook
           bp = latest_bp(patient, period)
           return "No blood pressure recorded in measurement period" if bp.nil?
 
-          format("Most recent BP %d/%d mmHg (%s) not controlled",
-            systolic_of(bp), diastolic_of(bp), bp.effective_date)
+          systolic = systolic_of(bp)
+          diastolic = diastolic_of(bp)
+          if systolic.nil? || diastolic.nil?
+            # Partial panel (missing systolic or diastolic component): treated
+            # as not controlled by #in_numerator?, and there is no complete
+            # reading to quote.
+            return format("Incomplete blood pressure recorded %s; no complete reading in measurement period",
+              bp.effective_date)
+          end
+
+          format("Most recent BP %d/%d mmHg (%s) not controlled", systolic, diastolic, bp.effective_date)
         end
 
         private
