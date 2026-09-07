@@ -31,6 +31,11 @@ module Rook
           "Lower is better. Numerator = patients with poor control or no HbA1c in the period."
         end
 
+        # Inverse measure: a lower score is better.
+        def improvement_notation
+          :decrease
+        end
+
         def in_denominator?(patient, period)
           age = patient.age_on(period.end)
           age >= 18 && age <= 75 && patient.condition?(codes_in(ValueSets::DIABETES))

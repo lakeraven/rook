@@ -4,8 +4,8 @@ require "test_helper"
 
 # The engine-neutral result type is MeasureReport-backed (rook#92): population
 # counts, period, and score live in a FHIR summary MeasureReport, and the
-# scalar readers project from it. Care gaps ride alongside and are embedded as
-# a contained, subject-list-shaped FHIR List of patient references.
+# scalar readers project from it. Care gaps ride alongside on the Ruby object
+# only — the summary report carries no subject-level data (mrt-2).
 class Rook::MeasureResultTest < Minitest::Test
   FakeMeasure = Struct.new(:id, :title)
   FakePatient = Struct.new(:id, :name)
@@ -42,10 +42,11 @@ class Rook::MeasureResultTest < Minitest::Test
     assert_in_delta 0.40, @result.measure_report.group.first.measureScore.value, 0.0001
   end
 
-  def test_zero_denominator_scores_zero
+  def test_zero_denominator_omits_measure_score_but_rate_reads_zero
     empty = Rook::MeasureResult.from_counts(measure: @measure, period: @period,
       denominator: 0, numerator: 0)
 
+    assert_nil empty.measure_report.group.first.measureScore
     assert_equal 0.0, empty.rate
     assert_equal 0.0, empty.rate_percent
   end
@@ -55,13 +56,63 @@ class Rook::MeasureResultTest < Minitest::Test
     assert_equal "Patient/pt-001", @result.care_gaps.first.patient_reference
   end
 
-  def test_care_gap_worklist_is_contained_as_a_subject_list
-    list = @result.measure_report.contained.find { |r| r.is_a?(FHIR::List) }
+  def test_summary_report_carries_no_contained_or_subject_level_data
+    assert_empty @result.measure_report.contained
+  end
 
-    refute_nil list
-    assert_equal "current", list.status
-    assert_equal [ "Patient/pt-001" ], list.entry.map { |e| e.item.reference }
-    assert_equal [ "Casey Alpha" ], list.entry.map { |e| e.item.display }
+  def test_improvement_notation_defaults_to_increase
+    coding = @result.measure_report.improvementNotation.coding.first
+
+    assert_equal "http://terminology.hl7.org/CodeSystem/measure-improvement-notation", coding.system
+    assert_equal "increase", coding.code
+  end
+
+  def test_improvement_notation_decrease_for_inverse_measures
+    inverse = Rook::MeasureResult.from_counts(measure: @measure, period: @period,
+      denominator: 20, numerator: 8, improvement_notation: :decrease)
+    coding = inverse.measure_report.improvementNotation.coding.first
+
+    assert_equal "http://terminology.hl7.org/CodeSystem/measure-improvement-notation", coding.system
+    assert_equal "decrease", coding.code
+  end
+
+  def test_rejects_an_unknown_improvement_notation
+    assert_raises(ArgumentError) do
+      Rook::MeasureResult.from_counts(measure: @measure, period: @period,
+        denominator: 20, numerator: 8, improvement_notation: :sideways)
+    end
+  end
+
+  def test_rejects_a_negative_denominator
+    assert_raises(ArgumentError) do
+      Rook::MeasureResult.from_counts(measure: @measure, period: @period,
+        denominator: -1, numerator: 0)
+    end
+  end
+
+  def test_rejects_a_negative_numerator
+    assert_raises(ArgumentError) do
+      Rook::MeasureResult.from_counts(measure: @measure, period: @period,
+        denominator: 10, numerator: -1)
+    end
+  end
+
+  def test_rejects_non_integer_counts
+    assert_raises(ArgumentError) do
+      Rook::MeasureResult.from_counts(measure: @measure, period: @period,
+        denominator: 10.0, numerator: 4)
+    end
+    assert_raises(ArgumentError) do
+      Rook::MeasureResult.from_counts(measure: @measure, period: @period,
+        denominator: 10, numerator: "4")
+    end
+  end
+
+  def test_rejects_a_numerator_exceeding_the_denominator
+    assert_raises(ArgumentError) do
+      Rook::MeasureResult.from_counts(measure: @measure, period: @period,
+        denominator: 5, numerator: 6)
+    end
   end
 
   def test_measure_report_is_valid_fhir

@@ -14,6 +14,14 @@ class Rook::ReportingPeriodTest < Minitest::Test
     assert_same @period, Rook::ReportingPeriod.wrap(@period)
   end
 
+  def test_wraps_an_exclusive_date_range_without_covering_its_end
+    wrapped = Rook::ReportingPeriod.wrap(Date.new(2025, 1, 1)...Date.new(2026, 1, 1))
+
+    assert_equal @period, wrapped
+    assert wrapped.cover?(Date.new(2025, 12, 31))
+    refute wrapped.cover?(Date.new(2026, 1, 1))
+  end
+
   def test_covers_dates_inclusively
     assert @period.cover?(Date.new(2025, 1, 1))
     assert @period.cover?(Date.new(2025, 12, 31))

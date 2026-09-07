@@ -95,6 +95,8 @@ module Rook
       end
 
       def initialize(profiles: PROFILES)
+        raise ArgumentError, "Consortium requires at least one clinic profile" if profiles.empty?
+
         @clinic_reports = profiles.map do |profile|
           clinic = ConsortiumClinic.build(profile)
           report = Report.new(population: clinic.population,
@@ -131,7 +133,8 @@ module Rook
             measure: measure,
             period: @clinic_reports.first.report.period,
             denominator: results.sum(&:denominator),
-            numerator: results.sum(&:numerator)
+            numerator: results.sum(&:numerator),
+            improvement_notation: measure.improvement_notation
           )
           Rollup.new(result: result, regime: REGIME_BY_MEASURE_ID.fetch(measure.id, "GPRA (legacy)"))
         end

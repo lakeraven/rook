@@ -16,12 +16,14 @@ module Rook
   # computed.
   #
   # The care-gap worklist rides alongside as CareGap entries (patient +
-  # human-readable reason) and is also embedded in the MeasureReport as a
-  # contained, subject-list-shaped FHIR List of patient references.
+  # human-readable reason) on the Ruby object only. The summary MeasureReport
+  # stays clean of subject-level data (mrt-2); patient-level evidence will
+  # land later as a proper subject-list MeasureReport (rook#92).
   class MeasureResult
     MEASURE_POPULATION_SYSTEM = "http://terminology.hl7.org/CodeSystem/measure-population"
+    IMPROVEMENT_NOTATION_SYSTEM = "http://terminology.hl7.org/CodeSystem/measure-improvement-notation"
+    IMPROVEMENT_NOTATIONS = %i[increase decrease].freeze
     MEASURE_CANONICAL_BASE = "https://rook.lakeraven.com/fhir/Measure"
-    CARE_GAP_LIST_ID = "care-gaps"
 
     # One care-gap worklist entry. +patient+ is any object with an #id (and
     # ideally a #name); +reason+ is the human-readable outreach reason.
@@ -34,47 +36,56 @@ module Rook
     # Builds a summary MeasureReport from population counts. This is the seam
     # every evaluation engine targets: hand over counts (plus the optional
     # care-gap worklist) and get the canonical result shape back.
-    def self.from_counts(measure:, period:, denominator:, numerator:, care_gaps: [])
+    #
+    # The signature will grow — exclusions, initial-population, stratifiers,
+    # and external measure canonicals are tracked in rook#59/#92.
+    def self.from_counts(measure:, period:, denominator:, numerator:, care_gaps: [],
+      improvement_notation: :increase)
+      validate_counts!(denominator, numerator)
+      unless IMPROVEMENT_NOTATIONS.include?(improvement_notation)
+        raise ArgumentError, "improvement_notation must be :increase or :decrease, got #{improvement_notation.inspect}"
+      end
+
       period = ReportingPeriod.wrap(period)
-      rate = denominator.zero? ? 0.0 : (numerator.to_f / denominator).round(4)
+      group = {
+        population: [
+          population_entry("denominator", denominator),
+          population_entry("numerator", numerator)
+        ]
+      }
+      # A zero denominator has no meaningful proportion: omit measureScore
+      # entirely (the #rate reader projects an absent score as 0.0).
+      group[:measureScore] = { value: (numerator.to_f / denominator).round(4) } if denominator.positive?
 
       report = FHIR::MeasureReport.new(
         status: "complete",
         type: "summary",
         measure: "#{MEASURE_CANONICAL_BASE}/#{measure.id}",
         period: period.to_fhir_period,
-        group: [ {
-          population: [
-            population_entry("denominator", denominator),
-            population_entry("numerator", numerator)
-          ],
-          measureScore: { value: rate }
-        } ]
+        improvementNotation: {
+          coding: [ { system: IMPROVEMENT_NOTATION_SYSTEM, code: improvement_notation.to_s } ]
+        },
+        group: [ group ]
       )
-      report.contained << care_gap_list(care_gaps) unless care_gaps.empty?
 
       new(measure: measure, period: period, measure_report: report, care_gaps: care_gaps)
     end
+
+    def self.validate_counts!(denominator, numerator)
+      unless denominator.is_a?(Integer) && denominator >= 0
+        raise ArgumentError, "denominator must be a non-negative Integer, got #{denominator.inspect}"
+      end
+      unless numerator.is_a?(Integer) && numerator >= 0
+        raise ArgumentError, "numerator must be a non-negative Integer, got #{numerator.inspect}"
+      end
+      raise ArgumentError, "numerator #{numerator} exceeds denominator #{denominator}" if numerator > denominator
+    end
+    private_class_method :validate_counts!
 
     def self.population_entry(code, count)
       { code: { coding: [ { system: MEASURE_POPULATION_SYSTEM, code: code } ] }, count: count }
     end
     private_class_method :population_entry
-
-    # Subject-list-shaped evidence link: the care-gap patients as a FHIR List.
-    def self.care_gap_list(care_gaps)
-      FHIR::List.new(
-        id: CARE_GAP_LIST_ID,
-        status: "current",
-        mode: "snapshot",
-        title: "Care-gap worklist",
-        entry: care_gaps.map do |gap|
-          display = gap.patient.respond_to?(:name) ? gap.patient.name : nil
-          { item: { reference: gap.patient_reference, display: display } }
-        end
-      )
-    end
-    private_class_method :care_gap_list
 
     def initialize(measure:, period:, measure_report:, care_gaps: [])
       @measure = measure

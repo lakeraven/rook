@@ -8,6 +8,10 @@ module Rook
   # resolver (Rook::InMemoryValueSetResolver) for demos and tests, and a
   # terminology-server-backed resolver (rook#63) that expands the same URLs via
   # a FHIR terminology service can drop in behind the same two methods.
+  #
+  # Matching is intentionally exact-string and code-only (system-blind) for the
+  # demo resolver; the terminology-backed resolver (rook#63) should introduce
+  # system-aware (system, code) pairs behind this same port.
   class ValueSetResolver
     # Returns the flat array of code strings in the value set's expansion.
     def codes(value_set_url)

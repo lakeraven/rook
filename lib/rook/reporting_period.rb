@@ -15,11 +15,13 @@ module Rook
   class ReportingPeriod
     attr_reader :start_date, :end_date
 
-    # Coerces a ReportingPeriod or an inclusive Date Range.
+    # Coerces a ReportingPeriod or a Date Range (inclusive or exclusive-end).
     def self.wrap(period)
       return period if period.is_a?(self)
 
-      new(period.first, period.last)
+      end_date = period.last
+      end_date -= 1 if period.respond_to?(:exclude_end?) && period.exclude_end?
+      new(period.first, end_date)
     end
 
     def initialize(start_date, end_date)

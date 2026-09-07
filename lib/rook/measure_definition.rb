@@ -40,6 +40,13 @@ module Rook
       raise NotImplementedError
     end
 
+    # Direction in which a higher score signifies improvement: :increase
+    # (default) or :decrease for inverse measures ("lower is better").
+    # Stamped onto the MeasureReport as improvementNotation.
+    def improvement_notation
+      :increase
+    end
+
     # Short reason string for a care-gap worklist entry.
     def gap_reason(patient, period)
       raise NotImplementedError
@@ -58,7 +65,8 @@ module Rook
         period: period,
         denominator: denominator(patients, period).size,
         numerator: numerator(patients, period).size,
-        care_gaps: gaps
+        care_gaps: gaps,
+        improvement_notation: improvement_notation
       )
     end
 
