@@ -4,7 +4,7 @@
 #   M:    BGPXD22.m (BPCPT), BGPXD21A.m (BPCPTD) @ BGP v25.1 Build 98 — evidence.lock.json
 #   populations: docs/measures/evidence/crs-v25/spec/populations.txt (User Population)
 #   vocabulary: features/parity/VOCABULARY.md (canonical seed facts)
-@wip @crs-v25 @pending-engine
+@crs-v25
 Feature: Controlling High Blood Pressure — Million Hearts (CRS v25 §2.6.2)
 
   GPRA denominator (NQF 0018): User Population ages 18–85 with hypertension

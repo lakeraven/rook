@@ -56,8 +56,13 @@ class EvidenceLockTest < Minitest::Test
     end
   end
 
+  # Docs that are rook's OWN design (divergence-flagged), not encodings of the
+  # CRS spec — they carry no spec citations by nature. Explicit allowlist so a
+  # new dossier can't silently opt out.
+  NON_DOSSIER_DOCS = %w[README.md fhir-mapping.md].freeze
+
   def test_dossiers_cite_resolvable_evidence
-    dossiers = Dir[File.join(DOSSIER_DIR, "*.md")].reject { |p| p.end_with?("README.md") }
+    dossiers = Dir[File.join(DOSSIER_DIR, "*.md")].reject { |p| NON_DOSSIER_DOCS.include?(File.basename(p)) }
     refute_empty dossiers
     dossiers.each do |dossier|
       body = File.read(dossier)
@@ -101,35 +106,29 @@ class EvidenceLockTest < Minitest::Test
       assert_match(%r{features/parity/VOCABULARY\.md}, body,
                    "#{name} must cite the seed vocabulary")
 
-      # Pending-engine features must be loud (@wip keeps CI green by exclusion,
-      # never by a silently-passing stub). Check the ACTUAL Gherkin tag line —
-      # the line directly above `Feature:` — not a substring anywhere (a
-      # comment carrying the tags would fool a substring check while CI runs
-      # the untagged scenarios).
+      # The rook driver exists (Rook::Crs) — parity features run in CI, so
+      # the tag line carries @crs-v25 (version pin) and must NOT reintroduce
+      # @wip, which would silently exclude them from the CI cucumber run.
       lines = body.lines.map(&:strip)
       feature_index = lines.index { |l| l.start_with?("Feature:") }
       refute_nil feature_index, "#{name} has no Feature: line"
       tag_line = lines[0...feature_index].reverse.find { |l| !l.empty? && !l.start_with?("#") }
-      %w[@wip @crs-v25 @pending-engine].each do |tag|
-        assert_includes tag_line.to_s.split, tag,
-                        "#{name}: #{tag} must be on the Feature's tag line until a driver exists"
-      end
+      assert_includes tag_line.to_s.split, "@crs-v25",
+                      "#{name}: @crs-v25 version tag must be on the Feature's tag line"
+      refute_includes tag_line.to_s.split, "@wip",
+                      "#{name}: parity features must not be excluded from CI via @wip"
     end
   end
 
-  def test_pending_steps_stay_pending_and_typed
+  def test_steps_are_a_live_typed_driver
     steps = File.read(File.join(FEATURES_DIR, "step_definitions", "parity_steps.rb"))
 
-    # While the features carry @pending-engine, every step body must raise
-    # cucumber pending via the single seed_pending helper — a step stubbed to
-    # pass would let `cucumber --tags @crs-v25` go green with no engine.
     definitions = steps.scan(/^(?:Given|When|Then)\(/).size
-    pendings = steps.scan(/^\s*seed_pending\s*$/).size
     assert_operator definitions, :>, 15, "typed vocabulary unexpectedly small"
-    assert_equal definitions, pendings,
-                 "every parity step must call seed_pending until a driver exists " \
-                 "(#{definitions} definitions, #{pendings} pending bodies)"
-    assert_match(/def seed_pending = pending\(PENDING_ENGINE\)/, steps)
+
+    # The driver landed with Rook::Crs — no step may regress to pending.
+    refute_match(/\bpending\(/, steps.gsub(/^#.*$/, ""),
+                 "parity steps must exercise the engine, not raise pending")
 
     # The vocabulary must stay typed: no catch-all fact parser. A regex that
     # swallows arbitrary English after has/had/is recreates the "parser, not a

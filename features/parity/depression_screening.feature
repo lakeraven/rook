@@ -4,7 +4,7 @@
 #   M:    BGPXD25.m, BGPXD27.m, BGPXPC11.m @ BGP v25.1 Build 98 — evidence.lock.json
 #   populations: docs/measures/evidence/crs-v25/spec/populations.txt (User Population)
 #   vocabulary: features/parity/VOCABULARY.md (canonical seed facts)
-@wip @crs-v25 @pending-engine
+@crs-v25
 Feature: Depression Screening (CRS v25 §2.5.4)
 
   GPRA denominators are User Population split 12–17 and 18+ (by sex). The

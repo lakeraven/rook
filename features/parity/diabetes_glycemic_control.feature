@@ -5,9 +5,9 @@
 #   populations: docs/measures/evidence/crs-v25/spec/populations.txt (User Pop Diabetic)
 #   vocabulary: features/parity/VOCABULARY.md (canonical seed facts)
 # These scenarios encode CRS v25 semantics — deliberately NOT the UDS/eCQM shape
-# the Rook::Demo measures approximate. Steps are pending until the CRS-faithful
-# engine lands; the same scenarios then run against real CRS via the #99 drivers.
-@wip @crs-v25 @pending-engine
+# the Rook::Demo measures approximate. The rook driver runs them against
+# Rook::Crs; the #99 CRS driver runs the same scenarios against real CRS.
+@crs-v25
 Feature: Diabetes: Glycemic Control (CRS v25 §2.1.2)
 
   The GPRA denominator is User Population diabetics — diabetes diagnosed prior
