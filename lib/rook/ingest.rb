@@ -2,6 +2,7 @@
 
 require "rook/source_descriptor"
 require "rook/ingest/ndjson_feed"
+require "rook/ingest/resource_feed"
 
 module Rook
   # Ingest seam: FHIR Bulk Data NDJSON in, provenance-tagged resources out.

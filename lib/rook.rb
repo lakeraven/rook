@@ -5,6 +5,7 @@ require "rook/result"
 require "rook/source_descriptor"
 require "rook/ports"
 require "rook/ingest"
+require "rook/crs"
 require "rook/vfc_eligibility_enforcement_service"
 require "rook/reportable_condition_service"
 

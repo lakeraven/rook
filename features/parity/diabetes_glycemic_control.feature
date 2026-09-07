@@ -5,9 +5,9 @@
 #   populations: docs/measures/evidence/crs-v25/spec/populations.txt (User Pop Diabetic)
 #   vocabulary: features/parity/VOCABULARY.md (canonical seed facts)
 # These scenarios encode CRS v25 semantics — deliberately NOT the UDS/eCQM shape
-# the Rook::Demo measures approximate. Steps are pending until the CRS-faithful
-# engine lands; the same scenarios then run against real CRS via the #99 drivers.
-@wip @crs-v25 @pending-engine
+# the Rook::Demo measures approximate. The rook driver runs them against
+# Rook::Crs; the #99 CRS driver runs the same scenarios against real CRS.
+@crs-v25
 Feature: Diabetes: Glycemic Control (CRS v25 §2.1.2)
 
   The GPRA denominator is User Population diabetics — diabetes diagnosed prior
@@ -26,6 +26,71 @@ Feature: Diabetes: Glycemic Control (CRS v25 §2.1.2)
     And "P-ELDER" has a diabetes Problem List entry with status "Active" entered 2018-06-15
     When the National GPRA report is run
     Then "P-ELDER" is in the "Diabetes: Glycemic Control" GPRA denominator
+
+  Scenario: Beneficiary class other than 01 keeps a patient out of the GPRA denominator
+    Given an otherwise-qualifying patient "P-NONBEN" aged 50 with beneficiary class "99"
+    And "P-NONBEN" has a diabetes POV first recorded 2018-06-15
+    And "P-NONBEN" has 2 ambulatory visits during the report period
+    And "P-NONBEN" has a diabetes Problem List entry with status "Active" entered 2018-06-15
+    When the National GPRA report is run
+    Then "P-NONBEN" is not in the "Diabetes: Glycemic Control" GPRA denominator
+
+  Scenario: Residence outside the GPRA community taxonomy keeps a patient out
+    Given an otherwise-qualifying patient "P-NONCOMM" aged 50 outside the GPRA community taxonomy
+    And "P-NONCOMM" has a diabetes POV first recorded 2018-06-15
+    And "P-NONCOMM" has 2 ambulatory visits during the report period
+    And "P-NONCOMM" has a diabetes Problem List entry with status "Active" entered 2018-06-15
+    When the National GPRA report is run
+    Then "P-NONCOMM" is not in the "Diabetes: Glycemic Control" GPRA denominator
+
+  Scenario: Two DM visits ever qualify without any Problem List entry
+    Given a User Population patient "P-POVQUAL" aged 50 at period end
+    And "P-POVQUAL" has a diabetes POV first recorded 2018-06-15
+    And "P-POVQUAL" has a diabetes POV first recorded 2019-04-20
+    And "P-POVQUAL" has 2 ambulatory visits during the report period
+    When the National GPRA report is run
+    Then "P-POVQUAL" is in the "Diabetes: Glycemic Control" GPRA denominator
+
+  Scenario: Hospitalizations count toward the two in-period visits
+    Given a User Population patient "P-INPAT" aged 50 at period end
+    And "P-INPAT" has a diabetes POV first recorded 2018-06-15
+    And "P-INPAT" has a diabetes Problem List entry with status "Active" entered 2018-06-15
+    And "P-INPAT" has 2 hospitalizations during the report period
+    When the National GPRA report is run
+    Then "P-INPAT" is in the "Diabetes: Glycemic Control" GPRA denominator
+
+  Scenario: A deceased patient is not in any denominator
+    Given a User Population patient "P-DECEASED" aged 50 at period end
+    And "P-DECEASED" has a diabetes POV first recorded 2018-06-15
+    And "P-DECEASED" has a diabetes Problem List entry with status "Active" entered 2018-06-15
+    And "P-DECEASED" has 2 ambulatory visits during the report period
+    And "P-DECEASED" died on 2025-06-01
+    When the National GPRA report is run
+    Then "P-DECEASED" is not in the "Diabetes: Glycemic Control" GPRA denominator
+
+  Scenario: Diagnosis exactly on the period start date is not prior to the period
+    Given a User Population patient "P-STARTDX" aged 50 at period end
+    And "P-STARTDX" has a diabetes POV first recorded 2025-01-01
+    And "P-STARTDX" has 2 ambulatory visits during the report period
+    And "P-STARTDX" has a diabetes Problem List entry with status "Active" entered 2025-01-01
+    When the National GPRA report is run
+    Then "P-STARTDX" is not in the "Diabetes: Glycemic Control" GPRA denominator
+
+  Scenario: Problem List onset prior to the period qualifies even when entered later
+    Given a User Population patient "P-ONSET" aged 50 at period end
+    And "P-ONSET" has 2 ambulatory visits during the report period
+    And "P-ONSET" has a diabetes Problem List entry with status "Active" onset 2018-06-15 entered 2025-03-01
+    When the National GPRA report is run
+    Then "P-ONSET" is in the "Diabetes: Glycemic Control" GPRA denominator
+
+  # M-verified (PLTAXNDR^BGPXDU): a Date of Onset ALONE governs when present;
+  # Date Entered applies only when onset is absent.
+  Scenario: Problem List onset during the period disqualifies even when entered earlier
+    Given a User Population patient "P-ONSETGOV" aged 50 at period end
+    And "P-ONSETGOV" has 2 ambulatory visits during the report period
+    And "P-ONSETGOV" has a diabetes Problem List entry with status "Active" onset 2025-03-01 entered 2024-12-01
+    When the National GPRA report is run
+    Then "P-ONSETGOV" is not in the "Diabetes: Glycemic Control" GPRA denominator
 
   Scenario: Diabetes diagnosed during the period does not qualify
     Given a User Population patient "P-NEW" aged 50 at period end
@@ -77,6 +142,13 @@ Feature: Diabetes: Glycemic Control (CRS v25 §2.1.2)
     And "P-SAMEDAY" has an A1c lab result of 10.1 resulted 2025-08-02
     When the National GPRA report is run
     Then "P-SAMEDAY" is in the "Poor Glycemic Control" GPRA numerator
+
+  Scenario: CPT 3044F counts as good control, not poor control
+    Given a qualifying GPRA diabetic patient "P-CPTGOOD"
+    And "P-CPTGOOD" has CPT "3044F" recorded 2025-06-20
+    When the National GPRA report is run
+    Then "P-CPTGOOD" is in the "Good Glycemic Control" numerator
+    And "P-CPTGOOD" is not in the "Poor Glycemic Control" GPRA numerator
 
   Scenario: CPT 3046F counts as A1c greater than 9
     Given a qualifying GPRA diabetic patient "P-CPT"

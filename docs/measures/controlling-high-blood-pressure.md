@@ -37,11 +37,19 @@ BP **< 140/90** — systolic < 140 AND diastolic < 90.
   behavior. Fenced as demo.
 - Hypertension dx **window** (period + prior year) and **status not Inactive** are
   easy to miss — both spec-explicit.
+- **ENGINE GAP (loud):** the pregnancy exclusion is implemented via the
+  Reproductive Factors path only; the spec's second path — a qualifying visit
+  with a pregnancy POV where the primary provider is not a CHR (code 53) — is
+  NOT implemented and has no scenario. A pregnant patient recorded only by
+  POV is wrongly retained in the denominator until this lands (needs the O-code
+  taxonomy from #83 plus a provider-role mapping).
 
 ## Open questions (differential probing, #99)
 
-1. Which BP records qualify (V Measurement sources, ER-visit handling) — read the
-   `MEANBP` implementation fully; the routine name suggests averaging behavior the
-   prose doesn't mention.
+1. `MEANBP` behavior — the routine name suggests same-day averaging the prose
+   doesn't mention; the engine implements last-BP + qualifying-setting filter
+   (spec's BP exclusions: hospital-side service categories H/I/S/O ≈ IMP/SS/OBSENC
+   classes, excluded clinics 23/30/44/79/C1/D4 — implemented). The service-
+   category-I mapping (no ActCode equivalent) is unresolved in fhir-mapping.md.
 2. Multiple same-day BPs across different visits vs one visit.
 3. Age boundary at exactly 18 / 85 on period end.

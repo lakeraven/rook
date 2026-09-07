@@ -4,7 +4,7 @@
 #   M:    BGPXD22.m (BPCPT), BGPXD21A.m (BPCPTD) @ BGP v25.1 Build 98 — evidence.lock.json
 #   populations: docs/measures/evidence/crs-v25/spec/populations.txt (User Population)
 #   vocabulary: features/parity/VOCABULARY.md (canonical seed facts)
-@wip @crs-v25 @pending-engine
+@crs-v25
 Feature: Controlling High Blood Pressure — Million Hearts (CRS v25 §2.6.2)
 
   GPRA denominator (NQF 0018): User Population ages 18–85 with hypertension
@@ -27,6 +27,12 @@ Feature: Controlling High Blood Pressure — Million Hearts (CRS v25 §2.6.2)
     And "H-OLD" has no hypertension Problem List entry
     When the National GPRA report is run
     Then "H-OLD" is not in the "Controlling High Blood Pressure" GPRA denominator
+
+  Scenario: Hypertension via an active Problem List entry qualifies without a POV
+    Given a User Population patient "H-PL" aged 62 at period end
+    And "H-PL" has a hypertension Problem List entry with status "Active" entered 2025-02-01
+    When the National GPRA report is run
+    Then "H-PL" is in the "Controlling High Blood Pressure" GPRA denominator
 
   Scenario: ESRD history ever excludes the patient
     Given a User Population patient "H-ESRD" aged 62 at period end
@@ -62,11 +68,29 @@ Feature: Controlling High Blood Pressure — Million Hearts (CRS v25 §2.6.2)
     Then "H-EDGE" is not in the "Controlling High Blood Pressure" GPRA numerator
 
   Scenario: Same-day readings — the controlled reading is preferred
+    # Controlled reading seeded FIRST so last-seeded-wins cannot masquerade
+    # as the spec's controlled-preference tie-break.
     Given a qualifying GPRA hypertensive patient "H-SAMEDAY"
-    And "H-SAMEDAY" has a BP reading of 148/94 on 2025-09-05 at an ambulatory visit
     And "H-SAMEDAY" has a BP reading of 132/84 on 2025-09-05 at an ambulatory visit
+    And "H-SAMEDAY" has a BP reading of 148/94 on 2025-09-05 at an ambulatory visit
     When the National GPRA report is run
     Then "H-SAMEDAY" is in the "Controlling High Blood Pressure" GPRA numerator
+
+  Scenario: An ER blood pressure never counts as the last reading
+    Given a qualifying GPRA hypertensive patient "H-ERBP"
+    And "H-ERBP" has a BP reading of 124/80 on 2025-06-01 at an ambulatory visit
+    And "H-ERBP" has a BP reading of 152/96 on 2025-11-01 at an ER visit
+    When the National GPRA report is run
+    Then "H-ERBP" is in the "Controlling High Blood Pressure" GPRA numerator
+
+  Scenario: Ages exactly 18 and 85 at period end are inside the band
+    Given a User Population patient "H-18" aged 18 at period end
+    And "H-18" has a hypertension POV recorded 2025-02-01
+    And a User Population patient "H-85" aged 85 at period end
+    And "H-85" has a hypertension POV recorded 2025-02-01
+    When the National GPRA report is run
+    Then "H-18" is in the "Controlling High Blood Pressure" GPRA denominator
+    And "H-85" is in the "Controlling High Blood Pressure" GPRA denominator
 
   Scenario: No BP documented in the period is not controlled
     Given a qualifying GPRA hypertensive patient "H-NOBP"
