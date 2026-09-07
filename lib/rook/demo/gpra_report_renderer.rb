@@ -20,7 +20,7 @@ module Rook
 
       def to_text
         lines = []
-        lines << "IHS CRS / GPRA National Clinical Measures (DEMO / SYNTHETIC DATA)"
+        lines << "#{@report.framework} (DEMO / SYNTHETIC DATA)"
         lines << "Facility: #{@report.clinic_label}"
         lines << "Report period: #{@report.period.first} to #{@report.period.last}"
         lines << "User population: #{@report.patient_count} synthetic patients"
@@ -59,7 +59,7 @@ module Rook
           <body>
             <header>
               <p class="badge">Demo / synthetic data — not a production report</p>
-              <h1>IHS CRS / GPRA National Clinical Measures</h1>
+              <h1>#{h @report.framework}</h1>
               <p class="meta">
                 #{h @report.clinic_label} &middot;
                 Report period #{h @report.period.first} to #{h @report.period.last} &middot;
