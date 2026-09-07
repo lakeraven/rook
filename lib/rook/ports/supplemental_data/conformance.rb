@@ -34,6 +34,15 @@ module Rook
       #                                  status: "active") = ...
       #   end
       #
+      # Arrange-hook date contract: +effective:+ maps to the source-side
+      # value that surfaces as +effectiveDateTime+ (patient/visit
+      # attributes) or +period.start+ (coverage; +ends:+ is +period.end+).
+      # +effective: nil+ arranges an UNDATED record, and undated must
+      # surface as the ABSENCE of that element on the returned resource —
+      # an implementation that stamps a synthetic date (today, epoch,
+      # period start) for a missing one is non-conformant, and the suite
+      # asserts the element's absence.
+      #
       # Typing contract (architecture review, 2026-09-07): reads return raw
       # fhir_models resources — FHIR::Observation / FHIR::Coverage — never
       # decorator or source-system types; the suite asserts the FHIR::Model
@@ -237,14 +246,20 @@ module Rook
 
         def test_conformance_undated_value_beats_all_dated_values
           # Undated = the registration-current value; it wins over any dated
-          # history regardless of arrange order.
+          # history regardless of arrange order — including a competitor
+          # dated ON the period end, which latest-dated-wins alone would
+          # pick. That competitor also catches an implementation that stamps
+          # "today" in place of a missing date: its coerced date can never
+          # beat the period-end one.
           arrange_patient_attribute(reader, "1", "housing-status", "homeless-shelter", effective: Date.new(2020, 5, 1))
           arrange_patient_attribute(reader, "1", "housing-status", "housed")
-          arrange_patient_attribute(reader, "1", "housing-status", "doubling-up", effective: Date.new(2026, 3, 1))
+          arrange_patient_attribute(reader, "1", "housing-status", "doubling-up", effective: PERIOD_2026.end)
 
           results = reader.patient_attributes([ "1" ], period: PERIOD_2026)
 
           assert_equal [ "housed" ], results.map { |o| o.valueCodeableConcept.coding.first.code }
+          # Undated must surface as date ABSENCE, not a synthetic stamp.
+          assert_nil results.first.effectiveDateTime
         end
 
         def test_conformance_nil_period_excludes_future_dated_values
@@ -261,6 +276,29 @@ module Rook
           # appears at all for patient 2.
           assert_equal [ [ "Patient/1", "class-a" ] ],
                        results.map { |o| [ o.subject.reference, o.valueCodeableConcept.coding.first.code ] }
+        end
+
+        def test_conformance_undated_visit_matches_only_unbounded_reads
+          # Fail-closed: an undated visit matching every bounded period
+          # would double-count across reporting periods. It appears only on
+          # +period: nil+ (all-visits) reads.
+          arrange_visit_attribute(reader, "1", "enc-undated", "visit-service-category", "medical")
+
+          assert_equal [], reader.visit_attributes([ "1" ], period: PERIOD_2026)
+          assert_equal [ "Encounter/enc-undated" ],
+                       reader.visit_attributes([ "1" ]).map { |o| o.encounter.reference }
+        end
+
+        def test_conformance_nil_period_returns_all_visits_including_future
+          arrange_visit_attribute(reader, "1", "enc-past", "visit-service-category", "medical",
+                                  effective: Date.today - 30)
+          arrange_visit_attribute(reader, "1", "enc-future", "visit-service-category", "dental",
+                                  effective: Date.today + 30)
+
+          results = reader.visit_attributes([ "1" ])
+
+          assert_equal %w[Encounter/enc-future Encounter/enc-past],
+                       results.map { |o| o.encounter.reference }.sort
         end
 
         def test_conformance_visit_attributes_select_visits_within_period_inclusive
@@ -309,6 +347,45 @@ module Rook
 
           assert_equal [ "medicaid" ], results.map { |c| c.type.coding.first.code }
           assert_equal [ "2026-06-01" ], results.map { |c| c.period.start }
+        end
+
+        def test_conformance_undated_coverage_beats_dated_same_category
+          # Same undated-beats-dated rule as patient attributes, applied per
+          # (beneficiary, payer category): a start-date-less coverage is the
+          # registration-current one and wins over dated history. Pins
+          # implementations that would rank "NULLS LAST".
+          arrange_patient_coverage(reader, "1", "medicaid", effective: Date.new(2026, 6, 1))
+          arrange_patient_coverage(reader, "1", "medicaid")
+
+          results = reader.patient_coverages([ "1" ], period: PERIOD_2026)
+
+          assert_equal [ "medicaid" ], results.map { |c| c.type.coding.first.code }
+          # Undated must surface as start ABSENCE, not a synthetic stamp.
+          assert_nil results.first.period&.start
+        end
+
+        def test_conformance_same_category_future_start_does_not_supersede
+          # A start after the as-of date is not yet effective — it neither
+          # matches nor supersedes the currently-effective coverage of the
+          # same category (unlike the cross-category case, where the future
+          # one simply drops out of its own group).
+          arrange_patient_coverage(reader, "1", "medicaid", effective: Date.new(2025, 6, 1))
+          arrange_patient_coverage(reader, "1", "medicaid", effective: Date.new(2027, 2, 1))
+
+          results = reader.patient_coverages([ "1" ], period: PERIOD_2026)
+
+          assert_equal [ "2025-06-01" ], results.map { |c| c.period.start }
+        end
+
+        def test_conformance_nil_period_coverage_is_as_of_today
+          # period: nil = "current now" for coverages too: a future-start
+          # coverage neither appears nor supersedes.
+          arrange_patient_coverage(reader, "1", "medicaid", effective: Date.today - 30)
+          arrange_patient_coverage(reader, "1", "medicaid", effective: Date.today + 30)
+
+          results = reader.patient_coverages([ "1" ])
+
+          assert_equal [ (Date.today - 30).to_s ], results.map { |c| c.period.start }
         end
 
         def test_conformance_dual_eligible_returns_medicare_and_medicaid_simultaneously

@@ -46,7 +46,17 @@ module Rook
       # see #patient_coverages. +period: nil+ means "current now" (as of
       # today; future-dated values are excluded). For visit-level
       # attributes the period selects visits occurring within the period
-      # (inclusive of both endpoints); +period: nil+ returns all visits.
+      # (inclusive of both endpoints); an UNDATED visit attribute matches
+      # only +period: nil+ reads — fail-closed, because a visit without a
+      # date matching every bounded period would double-count across
+      # reporting periods. +period: nil+ returns all visits, undated and
+      # future-dated included.
+      #
+      # "Undated" always means the date element is ABSENT on the returned
+      # resource (no +effectiveDateTime+ / +period.start+) — an
+      # implementation must never stamp a synthetic date (today, epoch,
+      # period start) in place of a missing one: under undated-beats-dated
+      # that would silently promote or demote the value.
       #
       # == Batching and failure
       #

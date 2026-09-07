@@ -55,7 +55,8 @@ module Rook
         # @param encounter_id [String] visit the attribute classifies
         # @param attribute [String] one of Attributes::VISIT_LEVEL
         # @param value [String] enumerated code per the attribute's +values:+
-        # @param effective [Date, nil] visit date (nil = undated, matches any period)
+        # @param effective [Date, nil] visit date (nil = undated, matches
+        #   only unbounded +period: nil+ reads — see Base)
         # @return [FHIR::Observation] the normalized observation
         def seed_visit_attribute(patient_id, encounter_id, attribute, value, effective: nil)
           validate_attribute!(attribute, Attributes::VISIT_LEVEL)
@@ -231,10 +232,12 @@ module Rook
         private_constant :EARLIEST
 
         # Visit-level period contract: the visit occurred within the period
-        # (inclusive of both endpoints); undated visits always match.
+        # (inclusive of both endpoints). Fail-closed on undated visits — an
+        # undated visit matching every bounded period would double-count
+        # across reporting periods, so it matches only +period: nil+ reads.
         def within_period?(observation, period)
           date = effective_date(observation)
-          date.nil? || period.cover?(date)
+          !date.nil? && period.cover?(date)
         end
 
         def effective_date(resource)
