@@ -29,7 +29,7 @@ class Rook::Ingest::NdjsonFeedTest < Minitest::Test
     with_ndjson("Patient.ndjson" => [ patient("p1") ]) do |dir|
       resource = Rook::Ingest::NdjsonFeed.directory(dir, source: PRIMARY).each_resource.first
 
-      assert_equal "urn:rook:source:test-fhir", resource.dig("meta", "source")
+      assert_equal "urn:lakeraven:source:test-fhir", resource.dig("meta", "source")
       assert_equal "test-fhir", Rook::Ingest.source_id(resource)
     end
   end

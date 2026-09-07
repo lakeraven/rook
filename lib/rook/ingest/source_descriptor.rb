@@ -23,7 +23,7 @@ module Rook
       CHANNELS = %i[primary_fhir supplemental].freeze
 
       # +meta.source+ is a URI in FHIR; stamp source ids under this scheme.
-      URI_PREFIX = "urn:rook:source:"
+      URI_PREFIX = "urn:lakeraven:source:"
 
       attr_reader :id, :platform, :channel
 

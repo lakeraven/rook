@@ -42,7 +42,7 @@ class Rook::Ingest::SourceDescriptorTest < Minitest::Test
   def test_uri_round_trips_the_source_id
     source = Rook::Ingest::SourceDescriptor.new(id: "site-suppl", platform: :nextgen, channel: :supplemental)
 
-    assert_equal "urn:rook:source:site-suppl", source.uri
+    assert_equal "urn:lakeraven:source:site-suppl", source.uri
     assert_equal "site-suppl", Rook::Ingest::SourceDescriptor.id_from_uri(source.uri)
   end
 
