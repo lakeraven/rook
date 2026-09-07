@@ -11,7 +11,8 @@ module Rook
   # generation when a reportable condition is diagnosed.
   #
   # Input is FHIR-native: #check takes a FHIR::Condition (every coding on
-  # Condition.code is checked — ICD-10-CM, SNOMED CT, etc.) or a bare
+  # Condition.code is checked — ICD-10-CM, SNOMED CT, etc.), a bare
+  # FHIR::CodeableConcept (the shape Condition.code holds), or a bare
   # FHIR::Coding. Condition lists remain injected configuration.
   class ReportableConditionService
     # Detection outcome for one diagnosis.
@@ -31,7 +32,7 @@ module Rook
     end
 
     # Check whether a diagnosis is reportable.
-    # @param condition [FHIR::Condition, FHIR::Coding]
+    # @param condition [FHIR::Condition, FHIR::CodeableConcept, FHIR::Coding]
     # @return [Result]
     def check(condition:)
       codings(condition).each do |coding|
@@ -58,12 +59,15 @@ module Rook
       case input
       when FHIR::Condition
         Array(input.code&.coding)
+      when FHIR::CodeableConcept
+        Array(input.coding)
       when FHIR::Coding
         [ input ]
       when nil
         []
       else
-        raise ArgumentError, "condition must be a FHIR::Condition or FHIR::Coding"
+        raise ArgumentError,
+          "condition must be a FHIR::Condition, FHIR::CodeableConcept, or FHIR::Coding"
       end
     end
 

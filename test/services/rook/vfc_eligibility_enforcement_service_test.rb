@@ -152,6 +152,45 @@ class Rook::VfcEligibilityEnforcementServiceTest < Minitest::Test
     refute result.success?
   end
 
+  def test_eligibility_coding_from_another_system_is_denied
+    registry = Registry::Mock.new
+    registry.seed_lot(id: "10", lot_number: "LOT123", vaccine_code: "08", funding_source: "VFC")
+    coverage = FHIR::Coverage.new(
+      status: "active",
+      beneficiary: { reference: "Patient/1" },
+      type: {
+        coding: [ { system: "http://terminology.hl7.org/CodeSystem/v3-ActCode", code: "V02" } ]
+      }
+    )
+    registry.define_singleton_method(:vfc_eligibility) { |_patient_id| coverage }
+
+    assert_nil Registry.vfc_eligibility_code(coverage)
+
+    result = Rook::VfcEligibilityEnforcementService.new(immunization_registry: registry)
+      .validate(patient_id: "1", lot_id: "10")
+    refute result.success?
+    assert result.reason.include?("not eligible")
+  end
+
+  def test_lot_with_wrong_system_vaccine_code_is_excluded
+    wrong_system_lot = FHIR::Medication.new(
+      id: "99",
+      code: { coding: [ { system: "http://snomed.info/sct", code: "08" } ] },
+      batch: { lotNumber: "LOT-SNOMED" }
+    )
+    registry = Registry::Mock.new
+    registry.seed_lot(id: "1", lot_number: "LOT-CVX", vaccine_code: "08")
+    registry.seed_eligibility(patient_id: "1", eligibility_code: "V02")
+    seeded = registry.vaccine_lots(vaccine_code: "08")
+    registry.define_singleton_method(:vaccine_lots) { |vaccine_code:| [ wrong_system_lot, *seeded ] }
+
+    assert_nil Registry.vaccine_code(wrong_system_lot)
+
+    lots = Rook::VfcEligibilityEnforcementService.new(immunization_registry: registry)
+      .eligible_lots_for_patient(patient_id: "1", vaccine_code: "08")
+    assert_equal [ "LOT-CVX" ], lots.map { |l| l.batch.lotNumber }
+  end
+
   def test_medication_without_funding_extension_is_not_vfc
     registry = Registry::Mock.new
     registry.seed_lot(id: "10", lot_number: "LOT123", vaccine_code: "08")
@@ -213,6 +252,13 @@ class Rook::VfcEligibilityEnforcementServiceTest < Minitest::Test
     assert result.success?
   ensure
     Rook::Ports.reset_configuration!
+  end
+
+  def test_new_without_configured_port_raises
+    Rook::Ports.reset_configuration!
+    error = assert_raises(ArgumentError) { Rook::VfcEligibilityEnforcementService.new }
+
+    assert_equal "no immunization registry port configured", error.message
   end
 
   private

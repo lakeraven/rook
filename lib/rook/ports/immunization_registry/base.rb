@@ -61,26 +61,40 @@ module Rook
       end
 
       # Read the v2-0064 eligibility code off a FHIR::Coverage.
+      #
+      # System-strict: only a coding whose system is VFC_ELIGIBILITY_SYSTEM
+      # counts. A Coverage without one yields nil (unknown eligibility),
+      # which consumers treat as not VFC-eligible — never a code borrowed
+      # from another code system.
       # @return [String, nil]
       def self.vfc_eligibility_code(coverage)
         return nil unless coverage
 
         codings = Array(coverage.type&.coding)
-        coding = codings.find { |c| c.system == VFC_ELIGIBILITY_SYSTEM } || codings.first
-        coding&.code
+        codings.find { |c| c.system == VFC_ELIGIBILITY_SYSTEM }&.code
       end
 
       # Read the CVX code off a FHIR::Medication.
+      #
+      # System-strict: only a coding whose system is CVX_SYSTEM counts;
+      # codes from other systems are ignored.
       # @return [String, nil]
       def self.vaccine_code(medication)
         return nil unless medication
 
         codings = Array(medication.code&.coding)
-        coding = codings.find { |c| c.system == CVX_SYSTEM } || codings.first
-        coding&.code
+        codings.find { |c| c.system == CVX_SYSTEM }&.code
       end
 
       # Read the funding source off a FHIR::Medication.
+      #
+      # Contract: adapters MUST populate the funding-source extension with
+      # valueCode or valueCoding — valueString is not read. A lot with no
+      # funding-source extension yields nil and is treated as non-VFC
+      # (administrable to any patient); this fail-open-for-unfunded-lots
+      # behavior is an intentional parity decision with existing VFC
+      # enforcement, so an adapter that omits the extension opts the lot
+      # out of VFC restriction rather than into it.
       # @return [String, nil]
       def self.funding_source(medication)
         return nil unless medication

@@ -70,6 +70,27 @@ class Rook::ReportableConditionServiceTest < Minitest::Test
     assert_equal "Tuberculosis", result.condition_name
   end
 
+  def test_accepts_fhir_codeable_concept
+    service = build_service(conditions: reportable_conditions)
+    concept = FHIR::CodeableConcept.new(
+      coding: [
+        { system: SNOMED, code: "154283005", display: "Pulmonary tuberculosis" },
+        { system: ICD10, code: "A15.0", display: "Pulmonary tuberculosis" }
+      ]
+    )
+    result = service.check(condition: concept)
+
+    assert result.reportable?
+    assert_equal "Tuberculosis", result.condition_name
+  end
+
+  def test_empty_codeable_concept_is_not_reportable
+    service = build_service(conditions: reportable_conditions)
+    result = service.check(condition: FHIR::CodeableConcept.new)
+
+    refute result.reportable?
+  end
+
   def test_matches_snomed_codes_when_configured
     conditions = [ { codes: [ "154283005" ], name: "Tuberculosis", urgency: "24h" } ]
     service = build_service(conditions: conditions)

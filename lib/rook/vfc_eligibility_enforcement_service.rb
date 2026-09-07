@@ -27,7 +27,12 @@ module Rook
     VFC_FUNDING_SOURCES = %w[VFC].freeze
 
     # @param immunization_registry [Rook::Ports::ImmunizationRegistry::Base]
+    # @raise [ArgumentError] when no port is supplied and none is configured
     def initialize(immunization_registry: Rook::Ports.immunization_registry)
+      if immunization_registry.nil?
+        raise ArgumentError, "no immunization registry port configured"
+      end
+
       @immunization_registry = immunization_registry
     end
 
@@ -86,6 +91,10 @@ module Rook
       raise StandardError, "eligibility lookup failed: #{e.message}"
     end
 
+    # A lot with no funding-source extension reads as nil funding and is
+    # treated as non-VFC (allowed to anyone) — intentional parity with
+    # existing enforcement; see ImmunizationRegistry.funding_source for the
+    # adapter contract (valueCode/valueCoding required, valueString unread).
     def vfc_lot?(lot)
       VFC_FUNDING_SOURCES.include?(registry.funding_source(lot))
     end
