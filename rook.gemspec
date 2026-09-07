@@ -26,5 +26,5 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "fhir_models", "~> 4.2"
   spec.add_dependency "rails", "~> 8.1"
-  spec.add_dependency "fhir_models", "~> 4.3"
+  spec.add_dependency "fhir_models", "~> 4.2"
 end
