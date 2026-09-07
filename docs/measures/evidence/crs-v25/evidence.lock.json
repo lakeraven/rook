@@ -1,0 +1,27 @@
+{
+  "spec_source": {
+    "file": "GPRAMeasuresV250.pdf",
+    "title": "CRS 2025 (v25.0) National GPRA/GPRAMA Report — Performance Measure List and Definitions (IHS, November 2024)",
+    "sha256": "0026f6e99a1872f7f5e28c7b356ca69a1ab6252c328555537df50302feeca429",
+    "workspace_location": "rpms/reference/crs/v25/ (public IHS document, ihs.gov/crs)"
+  },
+  "m_source": {
+    "baseline": "rpms-ops data/standup/bcer-9.0-ydb (blank-slate + FOIA RPMS)",
+    "bgp_version": "IHS CLINICAL REPORTING v25.1 Build 98 (JUL 09, 2025) — CRS 2025 generation (BGPX* namespace)",
+    "routines": {
+      "BGPXD2.m": "0dcc1c8a43a9b321f46c744c599a3350944dd52c08f0a23c50b7dba655df08d6",
+      "BGPXD22.m": "24cb48106e6447e26cbecfbab116bac6f016a5531146298e7c11f3a593533bb1",
+      "BGPXD21A.m": "851f8502064926efb1f0848064946cdedf8f419e2a26ff79eda365499a99c293",
+      "BGPXD25.m": "ac2f4ad940fa8db939f9519df69f87ec034df3dcc220c974b8c998997cd0dfeb",
+      "BGPXD27.m": "3e14bdc355783e73dfdbc3f2e25151c68b28d81a04a14a314a04468eb0fe5ff7",
+      "BGPXPC11.m": "673e2233bcdebabd44c9d276411799a063f8c9faffb7cc108eb19e80e99f3261",
+      "BGPXDU.m": "969c32d574b9f59330e19b4b8ff65c577198b5a2690df3fce54373cea672e023"
+    }
+  },
+  "extracts": {
+    "controlling-high-blood-pressure.txt": "2ca7697575bd41dee09b201c3c7fcb8bf0c19f98bc2e3691079b59c414fa653e",
+    "depression-screening.txt": "230ea3b49c2987d78b297dedcc46874cc302b9e33de1ba401189948839154a1f",
+    "diabetes-glycemic-control.txt": "2c2189f3ee57310d09399e2020b3c4db216a8082a7a70c62beba8b4fe4b81ab2",
+    "populations.txt": "bcdaf831480d963319bf1c41e36ccc9477e5c4337be07e95f2d1be03364181e5"
+  }
+}

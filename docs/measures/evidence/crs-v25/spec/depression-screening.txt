@@ -1,0 +1,150 @@
+[EVIDENCE EXTRACT — do not edit by hand]
+Source: GPRAMeasuresV250.pdf (CRS 2025 v25.0 National GPRA/GPRAMA Report — Performance Measure List and Definitions, IHS, November 2024; public document, ihs.gov)
+Source sha256: 0026f6e99a1872f7f5e28c7b356ca69a1ab6252c328555537df50302feeca429
+Extraction: pdftotext GPRAMeasuresV250.pdf - | sed -n '5233,5376p'
+Section: 2.5.4 Depression Screening
+
+Depression Screening
+
+2.5.4.1
+
+Owner and Contact
+Pamela End of Horn, IHS Division of Behavioral Health (DBH)
+
+2.5.4.2
+
+National Reporting
+NATIONAL (included in IHS Performance Report; reported to OMB and Congress)
+
+2.5.4.3
+
+Denominators
+1. Active Clinical patients 12 through 17 years old.
+2. Active Clinical patients ages 18 years and older.
+3. GPRA: User Population patients ages 12 through 17 years. Broken down by sex.
+4. GPRA: User Population patients ages 18 years and older. Broken down by sex.
+5. Active Diabetic patients, defined as Active Clinical patients diagnosed with
+diabetes prior to the Report Period, and at least two visits during the Report
+Period, and two DM-related visits ever or DM entry on the Problem List. Broken
+down by sex.
+
+2.5.4.4
+
+Numerators
+1. GPRA: Patients screened for depression or diagnosed with a mood disorder at any
+time during the Report Period.
+Note: This numerator does not include refusals.
+A. Patients screened for depression during the Report Period.
+B. Patients with a diagnosis of a mood disorder during the Report Period.
+C. Patients who were screened in a Behavioral Health clinic.
+
+2.5.4.5
+
+Definitions
+Note: Visit data can be found in PCC or BHS.
+
+National GPRA/GPRAMA Report
+Performance Measure List and Definitions
+November 2024
+
+Performance Measure Topics and Definitions
+
+73
+
+IHS Clinical Reporting System
+
+Version 25.0
+
+Diabetes
+First DM POV recorded in the V POV file or Problem List Entry where the status
+is not Deleted with Date of Onset or Date Entered prior to the Report Period:
+•
+
+ICD-9: 250.00 through 250.93 or ICD-10: E10.* through E13.*
+[SURVEILLANCE DIABETES]
+
+•
+
+SNOMED data set PXRM DIABETES (Problem List only)
+
+Depression Screening
+Any of the following:
+•
+
+Exam code 36
+
+•
+
+POV ICD-10: Z13.3* [BGP DEPRESSION SCRN DXS]
+
+•
+
+CPT 1220F, 3725F, G0444 [BGP DEPRESSION SCREEN CPTS]
+
+•
+
+BHS problem code 14.1 (screening for depression)
+
+•
+
+Measurement of PHQ9, PHQT, or EPDS.
+
+Mood Disorders
+At least two visits during the Report Period with POV for: Major Depressive
+Disorder, Dysthymic Disorder, Depressive Disorder Not Otherwise Specified
+(NOS), Bipolar I or II Disorder, Cyclothymic Disorder, Bipolar Disorder NOS,
+Mood Disorder Due to a General Medical Condition, Substance-induced Mood
+Disorder, or Mood Disorder NOS. These POV codes are:
+•
+
+ICD-10: F01.51, F06.31 through F06.34, F1*.*4, F10.159, F10.180, F10.181,
+F10.188, F10.259, F10.280, F10.281, F10.288, F10.959, F10.980, F10.981,
+F10.988, F30.*, F31.0 through F31.71, F31.73 through F31.75, F31.77,
+F31.81 through F31.9, F32.* through F39, F43.21, F43.23 [BGP MOOD
+DISORDERS]
+
+•
+
+BHS POV 14, 15
+
+Behavioral Health Clinic
+• Clinic codes C4, C9, 14, 43, 48
+2.5.4.6
+
+GPRA 2025 Target
+Ages 12–17 years: During GPRA Year 2025, achieve the target rate of 36.1% for the
+proportion of patients ages 12 through 17 years who receive annual screening for
+depression.
+Ages 18 years and older: During GPRA Year 2025, achieve the target rate of 39.6%
+for the proportion of adults ages 18 and older who receive annual screening for
+depression.
+
+National GPRA/GPRAMA Report
+Performance Measure List and Definitions
+November 2024
+
+Performance Measure Topics and Definitions
+
+74
+
+IHS Clinical Reporting System
+
+2.5.4.7
+
+Version 25.0
+
+Patient Lists
+•
+
+List of User Population patients 18 years and older screened for depression or
+diagnosed with mood disorder.
+
+•
+
+List of User Population patients 18 years and older not screened for depression or
+diagnosed with mood disorder.
+
+2.6
+
+Cardiovascular Disease Related Group
+

@@ -1,0 +1,134 @@
+[EVIDENCE EXTRACT — do not edit by hand]
+Source: GPRAMeasuresV250.pdf (CRS 2025 v25.0 National GPRA/GPRAMA Report — Performance Measure List and Definitions, IHS, November 2024; public document, ihs.gov)
+Source sha256: 0026f6e99a1872f7f5e28c7b356ca69a1ab6252c328555537df50302feeca429
+Extraction: pdftotext GPRAMeasuresV250.pdf - | sed -n '751,878p'
+Section: 2.1.2 Diabetes: Glycemic Control
+
+Diabetes: Glycemic Control
+
+2.1.2.1
+
+Owner and Contact
+
+Version 25.0
+
+Diabetes Program: Carmen Hardin
+2.1.2.2
+
+National Reporting
+NATIONAL (included in IHS Performance Report; reported to OMB and Congress)
+
+2.1.2.3
+
+Denominators
+1. GPRA: User Pop Diabetic patients, defined as User Population patients diagnosed
+with diabetes prior to the Report Period, and at least two visits during the Report
+Period, and two DM-related visits ever or DM entry on the Problem List. The key
+denominator for this and all diabetes-related topics follows.
+
+2.1.2.4
+
+Numerators
+1. Hemoglobin A1c documented during the Report Period.
+2. GPRA: Poor control: A1c greater (>) than 9.
+3. A1c is greater than or equal (≥) to 7 and less than (<) 8
+4. Good control: A1c less than (<) 8.
+
+2.1.2.5
+
+Definition
+Diabetes
+First DM Purpose of Visit (POV) recorded in the V POV file or Problem List
+Entry where the status is not Deleted with Date of Onset or Date Entered prior to
+the Report Period:
+•
+
+ICD-9: 250.00 through 250.93 or ICD-10: E10.* through E13.*
+[SURVEILLANCE DIABETES]
+
+•
+
+SNOMED data set PXRM DIABETES (Problem List only)
+
+A1c
+Searches for most recent A1c test with a result during the Report Period. If more
+than one A1c test is found on the same day or the same visit and one test has a
+result and the other does not, the test with the result will be used. If both tests
+have a result, the last test done on the visit will be used.
+
+National GPRA/GPRAMA Report
+Performance Measure List and Definitions
+November 2024
+
+Performance Measure Topics and Definitions
+
+10
+
+IHS Clinical Reporting System
+
+Version 25.0
+
+If an A1c test with a result is not found, CRS searches for the most recent A1c test
+without a result.
+•
+
+A1c defined as any of the following:
+–
+
+•
+
+2.1.2.6
+
+Current Procedural Terminology (CPT) 83036, 83037, 3044F to 3046F,
+3047F (old code), 3051F, 3052F [BGP HGBA1C CPTS]
+– Logical Observations Identifiers, Names, Codes (LOINC) taxonomy:
+17855-8, 17856-6, 41995-2, 4547-6, 4548-4, 4549-2, 71875-9, 96595-4
+[BGP HGBA1C LOINC CODES]
+– Site-populated taxonomy DM AUDIT HGB A1C TAX
+CPT 3044F represents A1c less than (<) 7 and will be included in the A1c less
+than (<) 8 numerator.
+
+•
+
+CPT 3046F represents A1c greater than (>) 9 and will be included in the A1c
+greater than (>) 9 numerator.
+
+•
+
+CPT 3051F represents A1c greater than or equal to (≥) 7 and less than (<) 8
+and will be included in the A1c greater than or equal to (≥) 7 and less than (<)
+8 and A1c less than (<) 8 numerators.
+
+GPRA 2025 Target
+Poor Glycemic Control: During GPRA Year 2025, achieve the target rate of 12.5%
+for the proportion of patients with diagnosed diabetes who have poor glycemic
+control (defined as A1c greater than [>] 9).
+
+2.1.2.7
+
+Patient Lists
+•
+
+List of diabetic patients with good glycemic control (Alc less than [<] 8).
+
+•
+
+List of diabetic patients without good Glycemic control (A1c greater than or equal
+to [≥] 8).
+
+•
+
+List of diabetic patients with a documented Alc.
+
+•
+
+List of diabetic patients without a documented Alc.
+
+•
+
+List of diabetic patients with poor glycemic control (Alc greater than [>] 9).
+
+•
+
+List of diabetic patients with A1c greater than or equal to (≥) 7 and less than (<) 8.
+
