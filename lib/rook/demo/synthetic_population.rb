@@ -29,6 +29,11 @@ module Rook
       SUPPLEMENTAL_SOURCE = Rook::SourceDescriptor.new(
         id: "demo-rpms-supplemental", platform: :rpms, channel: :supplemental)
 
+      EPIC_PRIMARY_SOURCE = Rook::SourceDescriptor.new(
+        id: "demo-epic-fhir", platform: :epic, channel: :primary_fhir)
+      EPIC_SUPPLEMENTAL_SOURCE = Rook::SourceDescriptor.new(
+        id: "demo-epic-supplemental", platform: :epic, channel: :supplemental)
+
       # A single synthetic patient with its linked Conditions, Observations,
       # and Coverages.
       Patient = Struct.new(:id, :family_name, :given_name, :gender, :birth_date,
@@ -139,6 +144,21 @@ module Rook
             source: PRIMARY_SOURCE),
           Rook::Ingest::NdjsonFeed.directory(File.join(FIXTURES_DIR, "supplemental"),
             source: SUPPLEMENTAL_SOURCE)
+        )
+      end
+
+      # The second committed population: the same US Core R4 content exported
+      # with Epic bulk-export idioms (rook#101 — see
+      # examples/generate_epic_population.rb), loaded through the SAME ingest
+      # seam under an +:epic+ source descriptor. Same code path from here on:
+      # EHR-agnosticism is the seam's contract, and this population is the
+      # demo proof.
+      def self.epic
+        ingest(
+          Rook::Ingest::NdjsonFeed.directory(File.join(FIXTURES_DIR, "epic", "primary_fhir"),
+            source: EPIC_PRIMARY_SOURCE),
+          Rook::Ingest::NdjsonFeed.directory(File.join(FIXTURES_DIR, "epic", "supplemental"),
+            source: EPIC_SUPPLEMENTAL_SOURCE)
         )
       end
 
