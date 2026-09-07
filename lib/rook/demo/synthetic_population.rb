@@ -24,9 +24,9 @@ module Rook
       SUPPLEMENTAL_ATTRIBUTE_SYSTEM =
         "https://terminology.lakeraven.com/CodeSystem/uds-supplemental-attribute"
 
-      PRIMARY_SOURCE = Rook::Ingest::SourceDescriptor.new(
+      PRIMARY_SOURCE = Rook::SourceDescriptor.new(
         id: "demo-rpms-fhir", platform: :rpms, channel: :primary_fhir)
-      SUPPLEMENTAL_SOURCE = Rook::Ingest::SourceDescriptor.new(
+      SUPPLEMENTAL_SOURCE = Rook::SourceDescriptor.new(
         id: "demo-rpms-supplemental", platform: :rpms, channel: :supplemental)
 
       # A single synthetic patient with its linked Conditions, Observations,

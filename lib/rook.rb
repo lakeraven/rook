@@ -2,6 +2,7 @@
 
 require "rook/version"
 require "rook/result"
+require "rook/source_descriptor"
 require "rook/ports"
 require "rook/ingest"
 require "rook/vfc_eligibility_enforcement_service"

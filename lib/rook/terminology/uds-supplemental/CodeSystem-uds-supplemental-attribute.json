@@ -1,0 +1,90 @@
+{
+  "resourceType": "CodeSystem",
+  "id": "uds-supplemental-attribute",
+  "url": "https://terminology.lakeraven.com/CodeSystem/uds-supplemental-attribute",
+  "name": "UDSSupplementalAttribute",
+  "title": "UDS Supplemental Attribute",
+  "status": "active",
+  "experimental": false,
+  "publisher": "Lakeraven",
+  "description": "Attribute codes for UDS supplemental data: patient/visit-level attributes UDS reporting needs that vendor FHIR APIs do not expose, normalized out of each EHR's registration, eligibility, and billing internals. Carried as Observation.code on normalized supplemental Observations. Coded attribute values come from the companion code system uds-supplemental-value; payer category is deliberately not an attribute here — it rides as FHIR Coverage typed from uds-payer-category.",
+  "caseSensitive": true,
+  "content": "complete",
+  "property": [
+    {
+      "code": "level",
+      "description": "Whether the attribute is recorded per patient (registration-derived, current-as-of semantics) or per visit (carried with an encounter reference).",
+      "type": "code"
+    },
+    {
+      "code": "value-kind",
+      "description": "Shape of the Observation value: 'percent' (valueQuantity, UCUM %, whole-percent semantics) or 'coded' (valueCodeableConcept from uds-supplemental-value).",
+      "type": "code"
+    }
+  ],
+  "concept": [
+    {
+      "code": "income-percent-fpl",
+      "display": "Income as percent of federal poverty level",
+      "definition": "Household income as a whole percent of the federal poverty level (basis for UDS income brackets); 138 means 138% FPL.",
+      "property": [
+        { "code": "level", "valueCode": "patient" },
+        { "code": "value-kind", "valueCode": "percent" }
+      ]
+    },
+    {
+      "code": "sliding-fee-class",
+      "display": "Sliding-fee discount class",
+      "definition": "Sliding-fee discount class assigned from income and household size.",
+      "property": [
+        { "code": "level", "valueCode": "patient" },
+        { "code": "value-kind", "valueCode": "coded" }
+      ]
+    },
+    {
+      "code": "housing-status",
+      "display": "Housing status",
+      "definition": "Housing status / homelessness (UDS Table 4 shelter categories).",
+      "property": [
+        { "code": "level", "valueCode": "patient" },
+        { "code": "value-kind", "valueCode": "coded" }
+      ]
+    },
+    {
+      "code": "agricultural-worker-status",
+      "display": "Agricultural worker status",
+      "definition": "Migratory / seasonal agricultural worker status.",
+      "property": [
+        { "code": "level", "valueCode": "patient" },
+        { "code": "value-kind", "valueCode": "coded" }
+      ]
+    },
+    {
+      "code": "veteran-status",
+      "display": "Veteran status",
+      "definition": "Whether the patient is a veteran.",
+      "property": [
+        { "code": "level", "valueCode": "patient" },
+        { "code": "value-kind", "valueCode": "coded" }
+      ]
+    },
+    {
+      "code": "language-barrier",
+      "display": "Language barrier",
+      "definition": "Whether the patient is best served in a language other than English.",
+      "property": [
+        { "code": "level", "valueCode": "patient" },
+        { "code": "value-kind", "valueCode": "coded" }
+      ]
+    },
+    {
+      "code": "visit-service-category",
+      "display": "Visit service category",
+      "definition": "UDS service-category classification of a visit. Mental health and substance use are distinct codes (not one behavioral-health bucket) — UDS Table 5 reports them on separate lines.",
+      "property": [
+        { "code": "level", "valueCode": "visit" },
+        { "code": "value-kind", "valueCode": "coded" }
+      ]
+    }
+  ]
+}

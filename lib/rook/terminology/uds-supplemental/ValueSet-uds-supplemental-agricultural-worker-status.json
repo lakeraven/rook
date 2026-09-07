@@ -1,0 +1,29 @@
+{
+  "resourceType": "ValueSet",
+  "id": "uds-supplemental-agricultural-worker-status",
+  "url": "https://terminology.lakeraven.com/ValueSet/uds-supplemental-agricultural-worker-status",
+  "name": "UDSSupplementalAgriculturalWorkerStatus",
+  "title": "UDS Supplemental Agricultural Worker Status Values",
+  "status": "active",
+  "experimental": false,
+  "publisher": "Lakeraven",
+  "description": "Migratory / seasonal agricultural worker status values — the admissible valueCodeableConcept codes for the uds-supplemental-attribute code \"agricultural-worker-status\".",
+  "compose": {
+    "include": [
+      {
+        "system": "https://terminology.lakeraven.com/CodeSystem/uds-supplemental-value",
+        "concept": [
+          {
+            "code": "migratory"
+          },
+          {
+            "code": "seasonal"
+          },
+          {
+            "code": "none"
+          }
+        ]
+      }
+    ]
+  }
+}
