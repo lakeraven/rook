@@ -32,10 +32,14 @@ module Rook
       # [BGP HGBA1C LOINC CODES] (§2.1.2.5).
       A1C_LOINC = %w[17855-8 17856-6 41995-2 4547-6 4548-4 4549-2 71875-9 96595-4].freeze
 
-      # [BGP HGBA1C CPTS] band codes and their numerator meanings (§2.1.2.5).
+      # A1c BAND CPTs — the only CPT evidence the M selection collects as a
+      # resulted candidate (M-verified: the HGBA1C^BGPXD2 CPT loop queries
+      # exactly these four). Non-band codes from [BGP HGBA1C CPTS] (83036,
+      # 83037, 3047F) mark "documented" via a fallback the M pass has not
+      # read yet (HCPT) — open question, not implemented.
       A1C_CPT_POOR = %w[3046F].freeze              # > 9
       A1C_CPT_GOOD = %w[3044F 3051F].freeze        # counts in < 8
-      A1C_CPTS = %w[83036 83037 3044F 3045F 3046F 3047F 3051F 3052F].freeze
+      A1C_CPT_BANDS = %w[3044F 3046F 3051F 3052F].freeze
 
       # [BGP ESRD PMS DXS] — trio subset; full set arrives with #83.
       ESRD_ICD10 = %w[I12.0 I13.11 I13.2 N18.5 N18.6 N19 Z48.22 Z91.15 Z94.0 Z99.2].freeze

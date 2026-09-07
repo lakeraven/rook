@@ -46,11 +46,11 @@ module ParityDriver
     add_visit(name, period_start << 6)
   end
 
-  def add_visit(patient, date, encounter_id: "enc-#{next_id}")
+  def add_visit(patient, date, encounter_id: "enc-#{next_id}", encounter_class: "AMB", clinic: "01")
     resources << {
       "resourceType" => "Encounter", "id" => encounter_id, "status" => "finished",
-      "class" => { "system" => "http://terminology.hl7.org/CodeSystem/v3-ActCode", "code" => "AMB" },
-      "type" => [ { "coding" => [ { "system" => T::CLINIC_CODE_SYSTEM, "code" => "01" } ] } ],
+      "class" => { "system" => "http://terminology.hl7.org/CodeSystem/v3-ActCode", "code" => encounter_class },
+      "type" => [ { "coding" => [ { "system" => T::CLINIC_CODE_SYSTEM, "code" => clinic } ] } ],
       "subject" => { "reference" => "Patient/#{patient}" },
       "period" => { "start" => date.iso8601 }
     }
@@ -105,6 +105,20 @@ module ParityDriver
     count.times { |i| add_visit(patient, period_start + 60 + (i * 180)) }
   end
 
+  def add_bp_observation(patient, encounter_id, sys, dia, date)
+    add_observation(patient,
+      "category" => [ { "coding" => [ { "code" => "vital-signs" } ] } ],
+      "code" => { "coding" => [ { "system" => T::LOINC, "code" => "85354-9" } ] },
+      "encounter" => { "reference" => "Encounter/#{encounter_id}" },
+      "effectiveDateTime" => date,
+      "component" => [
+        { "code" => { "coding" => [ { "system" => T::LOINC, "code" => "8480-6" } ] },
+          "valueQuantity" => { "value" => sys } },
+        { "code" => { "coding" => [ { "system" => T::LOINC, "code" => "8462-4" } ] },
+          "valueQuantity" => { "value" => dia } }
+      ])
+  end
+
   def report
     @report ||= begin
       feed = Rook::Ingest::ResourceFeed.new(resources: resources, source: DRIVER_SOURCE)
@@ -141,6 +155,15 @@ end
 
 Given(/^"([^"]*)" has (\d+) ambulatory visits? during the report period$/) do |patient, count|
   add_period_visits(patient, count.to_i)
+end
+
+Given(/^"([^"]*)" has (\d+) hospitalizations? during the report period$/) do |patient, count|
+  count.to_i.times { |i| add_visit(patient, period_start + 60 + (i * 180), encounter_class: "IMP") }
+end
+
+Given(/^"([^"]*)" died on (#{DATE})$/) do |patient, date|
+  record = resources.find { |r| r["resourceType"] == "Patient" && r["id"] == patient }
+  record["deceasedDateTime"] = date
 end
 
 # -- Diagnoses and Problem List -----------------------------------------------
@@ -220,19 +243,14 @@ Given(/^"([^"]*)" has CPT "([^"]*)" recorded (#{DATE})$/) do |patient, code, dat
   }
 end
 
+Given(/^"([^"]*)" has a BP reading of (\d+)\/(\d+) on (#{DATE}) at an ER visit$/) do |patient, sys, dia, date|
+  encounter_id = add_visit(patient, Date.parse(date), clinic: "30")
+  add_bp_observation(patient, encounter_id, sys.to_i, dia.to_i, date)
+end
+
 Given(/^"([^"]*)" has a BP reading of (\d+)\/(\d+) on (#{DATE}) at an ambulatory visit$/) do |patient, sys, dia, date|
   encounter_id = add_visit(patient, Date.parse(date))
-  add_observation(patient,
-    "category" => [ { "coding" => [ { "code" => "vital-signs" } ] } ],
-    "code" => { "coding" => [ { "system" => T::LOINC, "code" => "85354-9" } ] },
-    "encounter" => { "reference" => "Encounter/#{encounter_id}" },
-    "effectiveDateTime" => date,
-    "component" => [
-      { "code" => { "coding" => [ { "system" => T::LOINC, "code" => "8480-6" } ] },
-        "valueQuantity" => { "value" => sys.to_i } },
-      { "code" => { "coding" => [ { "system" => T::LOINC, "code" => "8462-4" } ] },
-        "valueQuantity" => { "value" => dia.to_i } }
-    ])
+  add_bp_observation(patient, encounter_id, sys.to_i, dia.to_i, date)
 end
 
 Given(/^"([^"]*)" has no BP reading during the report period$/) do |_patient|

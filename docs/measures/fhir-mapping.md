@@ -28,6 +28,30 @@ CRS-relevant information shows up as a parity break. Entries marked
 | BHS problem code (e.g. 14.1) | `Observation` — system `https://terminology.lakeraven.com/CodeSystem/bhs-problem-code` code `14.1`, `effectiveDateTime` *(provisional)* |
 | Currently-pregnant (Reproductive Factors) | `Observation` — LOINC `82810-3` (pregnancy status), `valueCodeableConcept` SNOMED `77386006` (pregnant), `effectiveDateTime` in period |
 
+**Known contract gaps (loud — from review, tracked for the adapter design):**
+
+- **Service category I (In Hospital)** has no v3-ActCode equivalent and no row;
+  it must not collapse into `IMP` (H) — BP exclusions need H and I distinct.
+- **ICD-9** facts (diabetes 250.\*, HTN 401.\*, ESRD DX/procs) have no row;
+  historical POVs/Problem List entries are unrepresentable yet.
+- **SNOMED Problem List sets** (PXRM DIABETES / ESSENTIAL HYPERTENSION / END
+  STAGE RENAL DISEASE) have no specified coding slot and no engine support.
+- **A1c string results** (`<7`, `>14`, `COMMENT`) cannot ride `valueQuantity`;
+  the contract needs a `valueString` rule before the engine can band them.
+- **Labs/CPTs carry no `encounter` reference**, so "last test done on the
+  visit" and same-visit lab/CPT pairing are unrepresentable.
+- **Encounter status** must be a real visit (`finished`/`in-progress`); the
+  engine drops `cancelled`/`entered-in-error`.
+- **Primary provider / CHR (code 53)** has no slot (pregnancy visit path).
+- **Reproductive Factors carry-forward**: a "Currently Pregnant = Yes" recorded
+  before the period that remains current has no dated row in-period and is lost.
+- **BHS POV 14/15** (mood) and BHS visit clinic (BH-clinic sub-numerator) have
+  no representation; only BHS problem 14.1 is mapped.
+- **Standalone systolic/diastolic Observations** are not read — the contract
+  requires the `85354-9` panel with components.
+- **Result timestamps are parsed as UTC calendar dates**; adapters must emit
+  site-local dates or period-boundary results will misfile.
+
 Engine-side code sets live in `Rook::Crs::Terminology` with their BGP taxonomy
 names cited; they are interim hand-seeded sets until the taxonomy extraction
 pipeline (#83–#85) supplies them as ValueSets.

@@ -43,12 +43,54 @@ Feature: Diabetes: Glycemic Control (CRS v25 §2.1.2)
     When the National GPRA report is run
     Then "P-NONCOMM" is not in the "Diabetes: Glycemic Control" GPRA denominator
 
+  Scenario: Two DM visits ever qualify without any Problem List entry
+    Given a User Population patient "P-POVQUAL" aged 50 at period end
+    And "P-POVQUAL" has a diabetes POV first recorded 2018-06-15
+    And "P-POVQUAL" has a diabetes POV first recorded 2019-04-20
+    And "P-POVQUAL" has 2 ambulatory visits during the report period
+    When the National GPRA report is run
+    Then "P-POVQUAL" is in the "Diabetes: Glycemic Control" GPRA denominator
+
+  Scenario: Hospitalizations count toward the two in-period visits
+    Given a User Population patient "P-INPAT" aged 50 at period end
+    And "P-INPAT" has a diabetes POV first recorded 2018-06-15
+    And "P-INPAT" has a diabetes Problem List entry with status "Active" entered 2018-06-15
+    And "P-INPAT" has 2 hospitalizations during the report period
+    When the National GPRA report is run
+    Then "P-INPAT" is in the "Diabetes: Glycemic Control" GPRA denominator
+
+  Scenario: A deceased patient is not in any denominator
+    Given a User Population patient "P-DECEASED" aged 50 at period end
+    And "P-DECEASED" has a diabetes POV first recorded 2018-06-15
+    And "P-DECEASED" has a diabetes Problem List entry with status "Active" entered 2018-06-15
+    And "P-DECEASED" has 2 ambulatory visits during the report period
+    And "P-DECEASED" died on 2025-06-01
+    When the National GPRA report is run
+    Then "P-DECEASED" is not in the "Diabetes: Glycemic Control" GPRA denominator
+
+  Scenario: Diagnosis exactly on the period start date is not prior to the period
+    Given a User Population patient "P-STARTDX" aged 50 at period end
+    And "P-STARTDX" has a diabetes POV first recorded 2025-01-01
+    And "P-STARTDX" has 2 ambulatory visits during the report period
+    And "P-STARTDX" has a diabetes Problem List entry with status "Active" entered 2025-01-01
+    When the National GPRA report is run
+    Then "P-STARTDX" is not in the "Diabetes: Glycemic Control" GPRA denominator
+
   Scenario: Problem List onset prior to the period qualifies even when entered later
     Given a User Population patient "P-ONSET" aged 50 at period end
     And "P-ONSET" has 2 ambulatory visits during the report period
     And "P-ONSET" has a diabetes Problem List entry with status "Active" onset 2018-06-15 entered 2025-03-01
     When the National GPRA report is run
     Then "P-ONSET" is in the "Diabetes: Glycemic Control" GPRA denominator
+
+  # M-verified (PLTAXNDR^BGPXDU): a Date of Onset ALONE governs when present;
+  # Date Entered applies only when onset is absent.
+  Scenario: Problem List onset during the period disqualifies even when entered earlier
+    Given a User Population patient "P-ONSETGOV" aged 50 at period end
+    And "P-ONSETGOV" has 2 ambulatory visits during the report period
+    And "P-ONSETGOV" has a diabetes Problem List entry with status "Active" onset 2025-03-01 entered 2024-12-01
+    When the National GPRA report is run
+    Then "P-ONSETGOV" is not in the "Diabetes: Glycemic Control" GPRA denominator
 
   Scenario: Diabetes diagnosed during the period does not qualify
     Given a User Population patient "P-NEW" aged 50 at period end

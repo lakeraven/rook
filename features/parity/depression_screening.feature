@@ -82,6 +82,16 @@ Feature: Depression Screening (CRS v25 §2.5.4)
     When the National GPRA report is run
     Then "D-BHS" is in the "Depression Screening 18+" GPRA numerator
 
+  Scenario: Ages exactly 12, 17, and 18 land in their strata
+    Given a User Population patient "D-12" aged 12 at period end
+    And a User Population patient "D-17" aged 17 at period end
+    And a User Population patient "D-18" aged 18 at period end
+    When the National GPRA report is run
+    Then "D-12" is in the "Depression Screening 12-17" GPRA denominator
+    And "D-17" is in the "Depression Screening 12-17" GPRA denominator
+    And "D-17" is not in the "Depression Screening 18+" GPRA denominator
+    And "D-18" is in the "Depression Screening 18+" GPRA denominator
+
   Scenario: Age 11 at period end is outside every denominator
     Given a User Population patient "D-CHILD" aged 11 at period end
     When the National GPRA report is run

@@ -76,6 +76,22 @@ Feature: Controlling High Blood Pressure — Million Hearts (CRS v25 §2.6.2)
     When the National GPRA report is run
     Then "H-SAMEDAY" is in the "Controlling High Blood Pressure" GPRA numerator
 
+  Scenario: An ER blood pressure never counts as the last reading
+    Given a qualifying GPRA hypertensive patient "H-ERBP"
+    And "H-ERBP" has a BP reading of 124/80 on 2025-06-01 at an ambulatory visit
+    And "H-ERBP" has a BP reading of 152/96 on 2025-11-01 at an ER visit
+    When the National GPRA report is run
+    Then "H-ERBP" is in the "Controlling High Blood Pressure" GPRA numerator
+
+  Scenario: Ages exactly 18 and 85 at period end are inside the band
+    Given a User Population patient "H-18" aged 18 at period end
+    And "H-18" has a hypertension POV recorded 2025-02-01
+    And a User Population patient "H-85" aged 85 at period end
+    And "H-85" has a hypertension POV recorded 2025-02-01
+    When the National GPRA report is run
+    Then "H-18" is in the "Controlling High Blood Pressure" GPRA denominator
+    And "H-85" is in the "Controlling High Blood Pressure" GPRA denominator
+
   Scenario: No BP documented in the period is not controlled
     Given a qualifying GPRA hypertensive patient "H-NOBP"
     And "H-NOBP" has no BP reading during the report period

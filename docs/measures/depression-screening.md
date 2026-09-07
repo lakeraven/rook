@@ -53,4 +53,6 @@ diagnosed; screened in a Behavioral Health clinic (codes C4, C9, 14, 43, 48).
 
 1. Full BH exam result-code semantics (P/N/R and anything else).
 2. Whether the two-visit mood-disorder rule requires distinct days.
+   **INTERIM ENGINE CHOICE (loud):** distinct calendar dates — two same-day
+   mood POVs count once until the probe settles it.
 3. EPDS/PHQ-T measurement capture paths in PCC (V Measurement type codes).

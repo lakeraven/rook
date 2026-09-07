@@ -63,7 +63,11 @@ module Rook
         @procedures = []
       end
 
-      def add_encounter(r) = @encounters << r
+      # Cancelled / entered-in-error visits never count (CRS does not count
+      # cancelled visits; mapping requires real visits only).
+      def add_encounter(r)
+        @encounters << r unless %w[cancelled entered-in-error].include?(r["status"])
+      end
       def add_condition(r) = @conditions << r
       def add_observation(r) = @observations << r
       def add_procedure(r) = @procedures << r
@@ -108,19 +112,26 @@ module Rook
         qualifying = encounters.any? do |e|
           klass = e.dig("class", "code")
           date = encounter_date(e)
-          %w[AMB SS OBSENC IMP VR].include?(klass) && date && window.cover?(date)
+          QUALIFYING_CLASSES.include?(klass) && date && window.cover?(date)
         end
         qualifying && alive_on?(period.end) && beneficiary_class == "01" && gpra_community?
       end
 
       # -- Visits -------------------------------------------------------------
 
-      def ambulatory_visit_dates
-        encounters.filter_map { |e| encounter_date(e) if e.dig("class", "code") == "AMB" }
+      QUALIFYING_CLASSES = %w[AMB SS OBSENC IMP VR].freeze
+
+      def qualifying_visit_dates
+        encounters.filter_map do |e|
+          encounter_date(e) if QUALIFYING_CLASSES.include?(e.dig("class", "code"))
+        end
       end
 
+      # "At least two visits during the Report Period" (§2.1.2.3) on the
+      # User Population base — any qualifying service category, not
+      # ambulatory-only.
       def visits_during(period)
-        ambulatory_visit_dates.count { |d| period.cover?(d) }
+        qualifying_visit_dates.count { |d| period.cover?(d) }
       end
 
       # -- Diagnosis facts ----------------------------------------------------
@@ -140,10 +151,11 @@ module Rook
       # DM PL entries still count (the DM rule excludes only Deleted).
       def first_diabetes_evidence_date
         dates = povs.select { |c| coded?(c, :diabetes_code?) }.filter_map { |c| condition_date(c) }
-        # Problem List qualifies on Date of Onset OR Date Entered prior to
-        # the period (§2.1.2.5) — the EARLIEST of the two, not entered-first.
+        # Problem List date rule (M-verified, PLTAXNDR^BGPXDU): when a Date
+        # of Onset exists it ALONE governs; Date Entered applies only when
+        # onset is absent — not min(), not entered-first.
         dates += problem_list.select { |c| coded?(c, :diabetes_code?) }
-                             .filter_map { |c| problem_list_dates(c).min }
+                             .filter_map { |c| problem_list_date(c) }
         dates.min
       end
 
@@ -167,7 +179,7 @@ module Rook
         pl_hit = problem_list.any? do |c|
           coded?(c, :hypertension_code?) &&
             c.dig("clinicalStatus", "coding", 0, "code") != "inactive" &&
-            (d = condition_date(c)) && window.cover?(d)
+            (d = problem_list_date(c)) && window.cover?(d)
         end
         pov_hit || pl_hit
       end
@@ -209,9 +221,15 @@ module Rook
       # Readings on the LAST date with a BP documented in the period; the
       # same-day rule ("first look for a blood pressure less than 140/90 on
       # that day") is applied by the measure over this set.
+      # §2.6.2.5 BP exclusions: readings taken in hospital-side service
+      # categories or excluded clinics (ER among them) never qualify.
+      BP_EXCLUDED_CLASSES = %w[IMP SS OBSENC].freeze
+      BP_EXCLUDED_CLINICS = %w[23 30 44 79 C1 D4].freeze
+
       def last_day_bps(period)
         readings = observations.filter_map do |o|
           next unless obs_code(o) == [ Terminology::LOINC, "85354-9" ]
+          next if bp_excluded_setting?(o)
           date = obs_date(o)
           next unless date && period.cover?(date)
           systolic = component_value(o, "8480-6")
@@ -220,6 +238,15 @@ module Rook
         end
         last = readings.map { |r| r[:date] }.max
         readings.select { |r| r[:date] == last }
+      end
+
+      def bp_excluded_setting?(observation)
+        ref = observation.dig("encounter", "reference").to_s.split("/").last
+        encounter = encounters.find { |e| e["id"] == ref }
+        return false unless encounter
+
+        BP_EXCLUDED_CLASSES.include?(encounter.dig("class", "code")) ||
+          BP_EXCLUDED_CLINICS.include?(encounter.dig("type", 0, "coding", 0, "code"))
       end
 
       # -- Depression screening evidence (§2.5.4.5) ---------------------------
@@ -289,7 +316,7 @@ module Rook
         end
         cpts = procedures.filter_map do |p|
           code = p.dig("code", "coding", 0, "code")
-          next unless Terminology::A1C_CPTS.include?(code)
+          next unless Terminology::A1C_CPT_BANDS.include?(code)
           date = parse_date(p["performedDateTime"])
           next unless date && period.cover?(date)
           A1cCandidate.new(date: date, value: nil, cpt: code)
@@ -315,8 +342,10 @@ module Rook
         parse_date(condition["recordedDate"] || condition["onsetDateTime"])
       end
 
-      def problem_list_dates(condition)
-        [ condition["recordedDate"], condition["onsetDateTime"] ].compact.map { |d| parse_date(d) }
+      # Onset governs when present; entered (recordedDate) only otherwise —
+      # PLTAXNDR^BGPXDU (M-verified).
+      def problem_list_date(condition)
+        parse_date(condition["onsetDateTime"] || condition["recordedDate"])
       end
 
       def encounter_date(encounter)

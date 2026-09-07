@@ -46,8 +46,10 @@ BP **< 140/90** — systolic < 140 AND diastolic < 90.
 
 ## Open questions (differential probing, #99)
 
-1. Which BP records qualify (V Measurement sources, ER-visit handling) — read the
-   `MEANBP` implementation fully; the routine name suggests averaging behavior the
-   prose doesn't mention.
+1. `MEANBP` behavior — the routine name suggests same-day averaging the prose
+   doesn't mention; the engine implements last-BP + qualifying-setting filter
+   (spec's BP exclusions: hospital-side service categories H/I/S/O ≈ IMP/SS/OBSENC
+   classes, excluded clinics 23/30/44/79/C1/D4 — implemented). The service-
+   category-I mapping (no ActCode equivalent) is unresolved in fhir-mapping.md.
 2. Multiple same-day BPs across different visits vs one visit.
 3. Age boundary at exactly 18 / 85 on period end.

@@ -46,7 +46,19 @@ qualifier on the Active Clinical base) for other measures — see `populations.m
 - Same-day pair where one test has a result and one does not → the test with the
   result; both with results → the last test on the visit (spec text; confirm exact
   ordering in differential probing — reverse-time subscripting makes the tie-break
-  subtle).
+  subtle). **INTERIM ENGINE CHOICE (loud):** among same-day resulted candidates
+  the engine currently keeps ingest order (dates are day-granular; result times
+  and visit linkage are not yet carried) — settle by probe, then carry times.
+- **Problem List date rule (M-verified, `PLTAXNDR^BGPXDU`):** a Date of Onset
+  ALONE governs when present; Date Entered applies only when onset is absent.
+- **CPT candidates are the four band codes only** (M-verified: the `HGBA1C`
+  CPT loop queries 3044F/3046F/3051F/3052F). Non-band [BGP HGBA1C CPTS] codes
+  (83036/83037/3047F) reach a fallback (`HCPT`) the M pass has not read —
+  their "documented" effect is open, not implemented.
+- **Probe question:** `PLTAXNDR^BGPXDU` takes a skip-Inactive flag and at least
+  one diabetes call site passes it as 1 — possibly contradicting the prose
+  "status is not Deleted" (which would let Inactive count). Settle which call
+  computes the §2.1.2 denominator before trusting either reading.
 
 ## Divergence flags
 
