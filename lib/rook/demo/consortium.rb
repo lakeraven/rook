@@ -64,9 +64,9 @@ module Rook
       # ONE engine computes both the legacy GPRA measure and the modern
       # eCQM/UDS measures from the same stock FHIR population.
       REGIME_BY_MEASURE_ID = {
-        "gpra-diabetes-poor-glycemic-control" => "GPRA (legacy)",
-        "gpra-controlling-high-blood-pressure" => "eCQM (modern)",
-        "gpra-depression-screening" => "eCQM (modern)"
+        "demo-gpra-diabetes-poor-glycemic-control" => "GPRA (legacy)",
+        "demo-gpra-controlling-high-blood-pressure" => "eCQM (modern)",
+        "demo-gpra-depression-screening" => "eCQM (modern)"
       }.freeze
 
       PROFILES = [

@@ -26,7 +26,7 @@ module Rook
           MINIMUM_AGE = 12
 
           def id
-            "gpra-depression-screening"
+            "demo-gpra-depression-screening"
           end
 
           def title

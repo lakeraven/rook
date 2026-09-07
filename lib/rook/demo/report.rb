@@ -42,9 +42,16 @@ module Rook
         uds
       end
 
+      # SALES DEMO ONLY — NOT CRS-faithful GPRA. This packages the demo's
+      # UDS/eCQM-shaped measure logic (18-75 age bands, missing A1c counted
+      # as poor control, no User Population base) under GPRA labels for a
+      # sales narrative. Real CRS v25 semantics differ on all of those
+      # points (see the divergence flags in docs/measures/): production and
+      # onboarding GPRA is Rook::Crs::NationalGpraReport, never this. The
+      # demo-gpra-* measure ids and the gem-hygiene test enforce the fence.
       def self.gpra(population: SyntheticPopulation.default, clinic_label: CLINIC_LABEL)
         new(population: population,
-          framework: "IHS CRS / GPRA National Clinical Measures",
+          framework: "IHS CRS / GPRA National Clinical Measures (demo preview)",
           measures: gpra_measures,
           clinic_label: clinic_label)
       end

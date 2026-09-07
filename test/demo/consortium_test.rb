@@ -18,7 +18,7 @@ class Rook::Demo::ConsortiumTest < Minitest::Test
   end
 
   def test_inverse_diabetes_rollup_declares_decrease_improvement_notation
-    rollup = @consortium.rollup.find { |r| r.measure.id == "gpra-diabetes-poor-glycemic-control" }
+    rollup = @consortium.rollup.find { |r| r.measure.id == "demo-gpra-diabetes-poor-glycemic-control" }
     coding = rollup.result.measure_report.improvementNotation.coding.first
 
     assert_equal "decrease", coding.code
@@ -67,7 +67,7 @@ class Rook::Demo::ConsortiumTest < Minitest::Test
 
   def test_clinics_produce_different_diabetes_control_rates
     rates = @consortium.clinic_reports.map do |cr|
-      cr.report.results.find { |r| r.measure.id == "gpra-diabetes-poor-glycemic-control" }.rate
+      cr.report.results.find { |r| r.measure.id == "demo-gpra-diabetes-poor-glycemic-control" }.rate
     end
 
     refute_equal 1, rates.uniq.size, "expected the three clinics to have distinct diabetes-control rates"
