@@ -23,11 +23,22 @@ Local (non-national) reports relax the AI/AN and community rules to user choices
 - Alive on the last day of the Report Period; AI/AN (Beneficiary 01); GPRA
   community taxonomy residency.
 
-## Active Diabetic (key denominator for diabetes-related topics)
+## The Diabetic qualifier — two derived cohorts, two bases
 
-Defined in the diabetes dossier: population base + diabetes diagnosed **prior to**
-the Report Period + **≥2 visits during** the Report Period + (2 DM-related visits
-ever OR DM Problem List entry). See `diabetes-glycemic-control.md`.
+The same three-part diabetes qualifier — diabetes diagnosed **prior to** the
+Report Period + **≥2 visits during** the Report Period + (2 DM-related visits
+ever OR DM Problem List entry) — is applied to BOTH population bases, yielding
+two distinct cohorts the spec names separately:
+
+- **User Pop Diabetic** = User Population + qualifier — the GPRA denominator of
+  Diabetes: Glycemic Control (§2.1.2, `diabetes-glycemic-control.md`).
+- **Active Diabetic** = **Active Clinical** + qualifier — used as a non-GPRA
+  denominator elsewhere (e.g. Depression Screening denominator 5, §2.5.4).
+
+They are not interchangeable: a patient with one qualifying medical visit in
+three years is User Population but not Active Clinical, so can be a User Pop
+Diabetic while not an Active Diabetic. Dossiers must name which cohort they
+mean.
 
 ## Divergence flags
 

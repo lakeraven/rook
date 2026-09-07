@@ -80,16 +80,61 @@ class EvidenceLockTest < Minitest::Test
     features.each do |feature|
       body = File.read(feature)
       name = File.basename(feature)
-      extract = body[%r{evidence/crs-v25/spec/([\w-]+\.txt)}, 1]
-      refute_nil extract, "#{name} must cite its spec evidence extract"
-      assert lock["extracts"].key?(extract), "#{name} cites unlocked evidence #{extract}"
+
+      body.scan(%r{evidence/crs-v25/spec/([\w-]+\.txt)}).flatten.uniq.tap do |extracts|
+        refute_empty extracts, "#{name} must cite its spec evidence extract"
+        extracts.each { |e| assert lock["extracts"].key?(e), "#{name} cites unlocked evidence #{e}" }
+        assert_includes extracts, "populations.txt",
+                        "#{name} must cite the population-base evidence its denominators build on"
+      end
+
+      body.scan(/(BGPX\w+\.m)/).flatten.uniq.tap do |routines|
+        refute_empty routines, "#{name} must cite its M evidence routines"
+        routines.each do |r|
+          assert lock["m_source"]["routines"].key?(r), "#{name} cites unpinned M routine #{r}"
+        end
+      end
+
       dossier = body[%r{docs/measures/([\w-]+\.md)}, 1]
       assert dossier && File.exist?(File.join(DOSSIER_DIR, dossier)),
              "#{name} must cite an existing dossier"
+      assert_match(%r{features/parity/VOCABULARY\.md}, body,
+                   "#{name} must cite the seed vocabulary")
+
       # Pending-engine features must be loud (@wip keeps CI green by exclusion,
-      # never by a silently-passing stub) — drop the tags only with a driver.
-      assert_match(/@wip @crs-v25 @pending-engine/, body,
-                   "#{name} must carry the pending tags until a driver exists")
+      # never by a silently-passing stub). Check the ACTUAL Gherkin tag line —
+      # the line directly above `Feature:` — not a substring anywhere (a
+      # comment carrying the tags would fool a substring check while CI runs
+      # the untagged scenarios).
+      lines = body.lines.map(&:strip)
+      feature_index = lines.index { |l| l.start_with?("Feature:") }
+      refute_nil feature_index, "#{name} has no Feature: line"
+      tag_line = lines[0...feature_index].reverse.find { |l| !l.empty? && !l.start_with?("#") }
+      %w[@wip @crs-v25 @pending-engine].each do |tag|
+        assert_includes tag_line.to_s.split, tag,
+                        "#{name}: #{tag} must be on the Feature's tag line until a driver exists"
+      end
     end
+  end
+
+  def test_pending_steps_stay_pending_and_typed
+    steps = File.read(File.join(FEATURES_DIR, "step_definitions", "parity_steps.rb"))
+
+    # While the features carry @pending-engine, every step body must raise
+    # cucumber pending via the single seed_pending helper — a step stubbed to
+    # pass would let `cucumber --tags @crs-v25` go green with no engine.
+    definitions = steps.scan(/^(?:Given|When|Then)\(/).size
+    pendings = steps.scan(/^\s*seed_pending\s*$/).size
+    assert_operator definitions, :>, 15, "typed vocabulary unexpectedly small"
+    assert_equal definitions, pendings,
+                 "every parity step must call seed_pending until a driver exists " \
+                 "(#{definitions} definitions, #{pendings} pending bodies)"
+    assert_match(/def seed_pending = pending\(PENDING_ENGINE\)/, steps)
+
+    # The vocabulary must stay typed: no catch-all fact parser. A regex that
+    # swallows arbitrary English after has/had/is recreates the "parser, not a
+    # vocabulary" hole — new facts get new steps instead.
+    refute_match(/\(\.\+\)\$/, steps.gsub(/^#.*$/, ""),
+                 "no step may end in an untyped catch-all capture")
   end
 end

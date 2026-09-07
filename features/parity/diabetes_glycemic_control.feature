@@ -2,6 +2,8 @@
 # Evidence: docs/measures/diabetes-glycemic-control.md
 #   spec: docs/measures/evidence/crs-v25/spec/diabetes-glycemic-control.txt (§2.1.2)
 #   M:    BGPXD2.m (DMGC, HGBA1C) @ BGP v25.1 Build 98 — see evidence.lock.json
+#   populations: docs/measures/evidence/crs-v25/spec/populations.txt (User Pop Diabetic)
+#   vocabulary: features/parity/VOCABULARY.md (canonical seed facts)
 # These scenarios encode CRS v25 semantics — deliberately NOT the UDS/eCQM shape
 # the Rook::Demo measures approximate. Steps are pending until the CRS-faithful
 # engine lands; the same scenarios then run against real CRS via the #99 drivers.
@@ -21,7 +23,7 @@ Feature: Diabetes: Glycemic Control (CRS v25 §2.1.2)
     Given a User Population patient "P-ELDER" aged 80 at period end
     And "P-ELDER" has a diabetes POV first recorded 2018-06-15
     And "P-ELDER" has 2 ambulatory visits during the report period
-    And "P-ELDER" has a diabetes Problem List entry with status "Active"
+    And "P-ELDER" has a diabetes Problem List entry with status "Active" entered 2018-06-15
     When the National GPRA report is run
     Then "P-ELDER" is in the "Diabetes: Glycemic Control" GPRA denominator
 
@@ -29,15 +31,16 @@ Feature: Diabetes: Glycemic Control (CRS v25 §2.1.2)
     Given a User Population patient "P-NEW" aged 50 at period end
     And "P-NEW" has a diabetes POV first recorded 2025-03-01
     And "P-NEW" has 2 ambulatory visits during the report period
-    And "P-NEW" has a diabetes Problem List entry with status "Active"
+    And "P-NEW" has a diabetes Problem List entry with status "Active" entered 2025-03-01
     When the National GPRA report is run
     Then "P-NEW" is not in the "Diabetes: Glycemic Control" GPRA denominator
+    # No diagnosis evidence — POV or Problem List — predates the period start.
 
   Scenario: Only one visit during the period does not qualify
     Given a User Population patient "P-ONEVISIT" aged 50 at period end
     And "P-ONEVISIT" has a diabetes POV first recorded 2018-06-15
     And "P-ONEVISIT" has 1 ambulatory visit during the report period
-    And "P-ONEVISIT" has a diabetes Problem List entry with status "Active"
+    And "P-ONEVISIT" has a diabetes Problem List entry with status "Active" entered 2018-06-15
     When the National GPRA report is run
     Then "P-ONEVISIT" is not in the "Diabetes: Glycemic Control" GPRA denominator
 

@@ -19,6 +19,10 @@
 
 **No age band.** (The UDS/eCQM analog restricts to 18–75; CRS GPRA does not.)
 
+Naming note: this **User Pop Diabetic** cohort applies the diabetes qualifier to
+the User Population base. The spec separately defines **Active Diabetic** (same
+qualifier on the Active Clinical base) for other measures — see `populations.md`.
+
 ## Numerators
 
 1. A1c documented during the Report Period.

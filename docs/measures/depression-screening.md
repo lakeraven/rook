@@ -11,7 +11,9 @@
 2. Active Clinical patients **18+**.
 3. **GPRA**: User Population **12–17**, broken down by sex.
 4. **GPRA**: User Population **18+**, broken down by sex.
-5. Active Diabetic patients (see diabetes dossier), by sex.
+5. **Active Diabetic** patients, by sex — the diabetes qualifier applied to the
+   **Active Clinical** base (NOT the User Pop Diabetic cohort of §2.1.2); see
+   `populations.md` for the two-cohort distinction.
 
 ## Numerator (GPRA)
 

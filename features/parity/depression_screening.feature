@@ -2,6 +2,8 @@
 # Evidence: docs/measures/depression-screening.md
 #   spec: docs/measures/evidence/crs-v25/spec/depression-screening.txt (§2.5.4)
 #   M:    BGPXD25.m, BGPXD27.m, BGPXPC11.m @ BGP v25.1 Build 98 — evidence.lock.json
+#   populations: docs/measures/evidence/crs-v25/spec/populations.txt (User Population)
+#   vocabulary: features/parity/VOCABULARY.md (canonical seed facts)
 @wip @crs-v25 @pending-engine
 Feature: Depression Screening (CRS v25 §2.5.4)
 
@@ -41,9 +43,12 @@ Feature: Depression Screening (CRS v25 §2.5.4)
     When the National GPRA report is run
     Then "D-ONEMOOD" is not in the "Depression Screening 18+" GPRA numerator
 
-  Scenario: A refused screening does not count
+  # M-verified path: BH exam 36 counts only with result P or N (^AMHREC check
+  # in BGPXD25/BGPXPC11); a PCC V Exam refusal variant is an open question in
+  # the dossier and gets its own scenario once the M pass settles it.
+  Scenario: A refused BH screening exam does not count
     Given a User Population patient "D-REFUSED" aged 40 at period end
-    And "D-REFUSED" has a depression screening exam recorded 2025-07-10 with result "R"
+    And "D-REFUSED" has a BH depression screening exam recorded 2025-07-10 with result "R"
     When the National GPRA report is run
     Then "D-REFUSED" is not in the "Depression Screening 18+" GPRA numerator
 
