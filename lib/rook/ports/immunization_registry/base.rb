@@ -40,6 +40,10 @@ module Rook
       end
 
       # Build a FHIR::Medication representing a vaccine lot.
+      #
+      # nil funding_source builds a lot with no funding-source extension —
+      # an unknown-funding lot, which consumers treat as VFC-restricted
+      # (see .funding_source). Conformant adapters always pass a value.
       # @param id [String] lot record id
       # @param lot_number [String]
       # @param vaccine_code [String] CVX code
@@ -88,13 +92,15 @@ module Rook
 
       # Read the funding source off a FHIR::Medication.
       #
-      # Contract: adapters MUST populate the funding-source extension with
-      # valueCode or valueCoding — valueString is not read. A lot with no
-      # funding-source extension yields nil and is treated as non-VFC
-      # (administrable to any patient); this fail-open-for-unfunded-lots
-      # behavior is an intentional parity decision with existing VFC
-      # enforcement, so an adapter that omits the extension opts the lot
-      # out of VFC restriction rather than into it.
+      # Contract: adapters MUST emit the funding-source extension with
+      # valueCode or valueCoding on EVERY lot — valueString is not read.
+      # A lot with no funding-source extension yields nil (unknown funding)
+      # and consumers fail closed: the lot is treated as VFC-restricted,
+      # administrable only to determinately VFC-eligible patients. An
+      # adapter that omits the extension therefore restricts the lot, never
+      # opens it up. The Mock enforces this contract at seed time so a
+      # non-conformant adapter is caught in integration, not at point of
+      # care.
       # @return [String, nil]
       def self.funding_source(medication)
         return nil unless medication

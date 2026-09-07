@@ -26,11 +26,21 @@ module Rook
         end
 
         # Seed a vaccine lot.
+        #
+        # Enforces the port contract: every lot MUST carry a funding source
+        # (see ImmunizationRegistry.funding_source), so a non-conformant
+        # adapter shape is caught in integration, not at point of care.
         # @param id [String]
         # @param lot_number [String]
         # @param vaccine_code [String] CVX code
-        # @param funding_source [String, nil] e.g. "VFC", "VFA", "private"
-        def seed_lot(id:, lot_number:, vaccine_code:, funding_source: nil)
+        # @param funding_source [String] e.g. "VFC", "VFA", "private"
+        # @raise [ArgumentError] when funding_source is missing or blank
+        def seed_lot(id:, lot_number:, vaccine_code:, funding_source:)
+          if funding_source.to_s.strip.empty?
+            raise ArgumentError,
+              "funding_source is required: adapters must emit a funding source on every lot"
+          end
+
           @lots[id] = ImmunizationRegistry.build_vaccine_lot(
             id: id, lot_number: lot_number,
             vaccine_code: vaccine_code, funding_source: funding_source

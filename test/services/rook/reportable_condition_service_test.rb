@@ -107,6 +107,68 @@ class Rook::ReportableConditionServiceTest < Minitest::Test
   end
 
   # =============================================================================
+  # VERIFICATION STATUS
+  # =============================================================================
+
+  def test_entered_in_error_condition_is_not_reportable
+    service = build_service(conditions: reportable_conditions)
+    condition = fhir_condition("A15.0", "Pulmonary tuberculosis")
+    condition.verificationStatus = verification_status("entered-in-error")
+    result = service.check(condition: condition)
+
+    refute result.reportable?
+  end
+
+  def test_refuted_condition_is_not_reportable
+    service = build_service(conditions: reportable_conditions)
+    condition = fhir_condition("B05.9", "Measles")
+    condition.verificationStatus = verification_status("refuted")
+    result = service.check(condition: condition)
+
+    refute result.reportable?
+  end
+
+  def test_confirmed_condition_is_still_reportable
+    service = build_service(conditions: reportable_conditions)
+    condition = fhir_condition("A15.0", "Pulmonary tuberculosis")
+    condition.verificationStatus = verification_status("confirmed")
+    result = service.check(condition: condition)
+
+    assert result.reportable?
+  end
+
+  # =============================================================================
+  # SYSTEM-SCOPED CONFIGURED CODES
+  # =============================================================================
+
+  def test_system_scoped_code_matches_coding_in_that_system
+    conditions = [ { codes: [ { system: SNOMED, code: "154283005" } ],
+                     name: "Tuberculosis", urgency: "24h" } ]
+    service = build_service(conditions: conditions)
+    result = service.check(condition: FHIR::Coding.new(system: SNOMED, code: "154283005"))
+
+    assert result.reportable?
+    assert_equal "Tuberculosis", result.condition_name
+  end
+
+  def test_system_scoped_code_rejects_same_code_from_another_system
+    conditions = [ { codes: [ { system: SNOMED, code: "154283005" } ],
+                     name: "Tuberculosis", urgency: "24h" } ]
+    service = build_service(conditions: conditions)
+    result = service.check(condition: FHIR::Coding.new(system: ICD10, code: "154283005"))
+
+    refute result.reportable?
+  end
+
+  def test_bare_string_code_keeps_code_only_matching_across_systems
+    conditions = [ { codes: [ "154283005" ], name: "Tuberculosis", urgency: "24h" } ]
+    service = build_service(conditions: conditions)
+    result = service.check(condition: FHIR::Coding.new(system: ICD10, code: "154283005"))
+
+    assert result.reportable?
+  end
+
+  # =============================================================================
   # RESULT SHAPE
   # =============================================================================
 
@@ -175,6 +237,14 @@ class Rook::ReportableConditionServiceTest < Minitest::Test
   def fhir_condition(code, display)
     FHIR::Condition.new(
       code: { coding: [ { system: ICD10, code: code, display: display } ] }
+    )
+  end
+
+  def verification_status(code)
+    FHIR::CodeableConcept.new(
+      coding: [ {
+        system: Rook::ReportableConditionService::VERIFICATION_STATUS_SYSTEM, code: code
+      } ]
     )
   end
 

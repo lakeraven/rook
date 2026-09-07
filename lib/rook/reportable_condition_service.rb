@@ -14,7 +14,20 @@ module Rook
   # Condition.code is checked — ICD-10-CM, SNOMED CT, etc.), a bare
   # FHIR::CodeableConcept (the shape Condition.code holds), or a bare
   # FHIR::Coding. Condition lists remain injected configuration.
+  #
+  # A FHIR::Condition whose verificationStatus is entered-in-error or
+  # refuted is never reportable, regardless of its codes. Bare
+  # Coding/CodeableConcept inputs carry no verificationStatus and are
+  # checked on codes alone.
+  #
+  # Configured :codes entries are either bare code strings ("A15.0"),
+  # which match a coding by code alone in any system, or
+  # { system:, code: } hashes, which additionally require the coding's
+  # system to match.
   class ReportableConditionService
+    VERIFICATION_STATUS_SYSTEM = "http://terminology.hl7.org/CodeSystem/condition-ver-status"
+    NEGATING_VERIFICATION_CODES = %w[entered-in-error refuted].freeze
+
     # Detection outcome for one diagnosis.
     Result = Data.define(:reportable, :condition_name, :jurisdiction, :urgency) do
       def reportable?
@@ -22,8 +35,9 @@ module Rook
       end
     end
 
-    # @param conditions [Array<Hash>] entries with :codes (Array<String>),
-    #   :name, :urgency
+    # @param conditions [Array<Hash>] entries with :codes
+    #   (Array<String, Hash> — bare code strings or { system:, code: }
+    #   hashes), :name, :urgency
     # @param jurisdiction [String]
     def initialize(conditions:, jurisdiction: "US")
       @conditions = conditions
@@ -35,11 +49,13 @@ module Rook
     # @param condition [FHIR::Condition, FHIR::CodeableConcept, FHIR::Coding]
     # @return [Result]
     def check(condition:)
+      return not_reportable_result if negated_verification_status?(condition)
+
       codings(condition).each do |coding|
         code = coding.code.to_s.strip
         next if code.empty?
 
-        entry = @code_index[code]
+        entry = matching_entry(code, coding.system)
         next unless entry
 
         return Result.new(
@@ -54,6 +70,17 @@ module Rook
     end
 
     private
+
+    # A Condition marked entered-in-error or refuted is not a diagnosis;
+    # only FHIR::Condition carries verificationStatus.
+    def negated_verification_status?(input)
+      return false unless input.is_a?(FHIR::Condition)
+
+      Array(input.verificationStatus&.coding).any? do |coding|
+        NEGATING_VERIFICATION_CODES.include?(coding.code) &&
+          (coding.system.nil? || coding.system == VERIFICATION_STATUS_SYSTEM)
+      end
+    end
 
     def codings(input)
       case input
@@ -71,12 +98,25 @@ module Rook
       end
     end
 
+    # Index: code string => [ { system: (nil for bare-string config),
+    # condition: entry }, ... ]. A nil system means legacy code-only
+    # matching; a present system must equal the coding's system.
     def build_code_index
       index = {}
       @conditions.each do |condition|
-        condition[:codes].each { |code| index[code] = condition }
+        condition[:codes].each do |code|
+          system, bare_code = code.is_a?(Hash) ? [ code[:system], code[:code] ] : [ nil, code ]
+          (index[bare_code] ||= []) << { system: system, condition: condition }
+        end
       end
       index
+    end
+
+    def matching_entry(code, coding_system)
+      candidates = @code_index[code]
+      return nil unless candidates
+
+      candidates.find { |c| c[:system].nil? || c[:system] == coding_system }&.fetch(:condition)
     end
 
     def not_reportable_result
