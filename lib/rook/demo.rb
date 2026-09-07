@@ -9,14 +9,17 @@ module Rook
   # numerator / rate and a care-gap worklist.
   #
   # It is intentionally minimal and MUST NOT be mistaken for, or grown into, the
-  # real measure engine. Production measure execution is the CSIRO Pathling-based
-  # work tracked in rook#60 (spike) and rook#65 (IHS measure library). Keep this
-  # module out of that path.
+  # real measure engine. The demo *uses* the engine-neutral measure interfaces
+  # (Rook::MeasureDefinition, Rook::MeasureResult, Rook::ReportingPeriod,
+  # Rook::ValueSetResolver); the production ViewDefinition engine tracked in
+  # rook#59 will implement the same interfaces. Keep this module out of that
+  # path.
   module Demo
   end
 end
 
 require "rook/demo/synthetic_population"
+require "rook/demo/value_sets"
 require "rook/demo/measure"
 require "rook/demo/measures/diabetes_hba1c_poor_control"
 require "rook/demo/measures/controlling_high_blood_pressure"

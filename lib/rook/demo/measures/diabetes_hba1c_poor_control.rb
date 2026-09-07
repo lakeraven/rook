@@ -10,7 +10,7 @@ module Rook
       # UDS Table 6B — Diabetes: Hemoglobin A1c (HbA1c) Poor Control (>9%).
       #
       #   Denominator: patients aged 18-75 (at period end) with a diabetes
-      #                diagnosis.
+      #                diagnosis (ValueSets::DIABETES).
       #   Numerator:   most recent HbA1c in the period is >9%, OR no HbA1c was
       #                recorded during the period.
       #
@@ -31,14 +31,22 @@ module Rook
           "Lower is better. Numerator = patients with poor control or no HbA1c in the period."
         end
 
+        # Inverse measure: a lower score is better.
+        def improvement_notation
+          :decrease
+        end
+
         def in_denominator?(patient, period)
           age = patient.age_on(period.end)
-          age >= 18 && age <= 75 && patient.condition?(DIABETES_CODES)
+          age >= 18 && age <= 75 && patient.condition?(codes_in(ValueSets::DIABETES))
         end
 
         def in_numerator?(patient, period)
-          latest = patient.latest_observation(HBA1C_LOINC, period)
-          latest.nil? || latest.value > POOR_CONTROL_THRESHOLD
+          value = latest_hba1c(patient, period)&.value
+          # An Observation without a numeric result (e.g. dataAbsentReason)
+          # counts the same as no HbA1c recorded: no usable result -> poor
+          # control (numerator), per the measure's missing-result rule.
+          value.nil? || value > POOR_CONTROL_THRESHOLD
         end
 
         # For an inverse measure, being in the numerator is the gap.
@@ -48,10 +56,17 @@ module Rook
 
         # Short reason string for the worklist.
         def gap_reason(patient, period)
-          latest = patient.latest_observation(HBA1C_LOINC, period)
+          latest = latest_hba1c(patient, period)
           return "No HbA1c recorded in measurement period" if latest.nil?
+          return format("HbA1c recorded %s has no usable result", latest.effective_date) if latest.value.nil?
 
           format("Most recent HbA1c %.1f%% (%s) exceeds 9%%", latest.value, latest.effective_date)
+        end
+
+        private
+
+        def latest_hba1c(patient, period)
+          patient.latest_observation(codes_in(ValueSets::HBA1C_LABORATORY_TEST), period)
         end
       end
     end

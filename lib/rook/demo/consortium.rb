@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "rook/measure_result"
 require "rook/demo/consortium_clinic"
 require "rook/demo/report"
 
@@ -34,11 +35,28 @@ module Rook
         end
       end
 
-      # Consortium-wide total for one measure: summed across every clinic's
-      # own Report::Result for that measure.
-      Rollup = Struct.new(:measure, :regime, :denominator, :numerator, :rate, keyword_init: true) do
+      # Consortium-wide total for one measure: a MeasureReport-backed
+      # Rook::MeasureResult built from the summed clinic counts, tagged with
+      # the reporting regime for the dashboard.
+      Rollup = Struct.new(:result, :regime, keyword_init: true) do
+        def measure
+          result.measure
+        end
+
+        def denominator
+          result.denominator
+        end
+
+        def numerator
+          result.numerator
+        end
+
+        def rate
+          result.rate
+        end
+
         def rate_percent
-          (rate * 100).round(1)
+          result.rate_percent
         end
       end
 
@@ -77,11 +95,14 @@ module Rook
       end
 
       def initialize(profiles: PROFILES)
+        raise ArgumentError, "Consortium requires at least one clinic profile" if profiles.empty?
+
         @clinic_reports = profiles.map do |profile|
           clinic = ConsortiumClinic.build(profile)
           report = Report.new(population: clinic.population,
             framework: "IHS CRS / GPRA National Clinical Measures",
-            measures: Report.gpra_measures)
+            measures: Report.gpra_measures,
+            clinic_label: profile.name)
           ClinicReport.new(clinic: clinic, report: report)
         end
       end
@@ -109,11 +130,15 @@ module Rook
       def rollup
         @rollup ||= measures.map do |measure|
           results = @clinic_reports.map { |cr| result_for(cr.report, measure.id) }
-          denominator = results.sum(&:denominator)
-          numerator = results.sum(&:numerator)
-          rate = denominator.zero? ? 0.0 : (numerator.to_f / denominator).round(4)
-          Rollup.new(measure: measure, regime: REGIME_BY_MEASURE_ID.fetch(measure.id, "GPRA (legacy)"),
-            denominator: denominator, numerator: numerator, rate: rate)
+          result = MeasureResult.from_counts(
+            measure: measure,
+            period: @clinic_reports.first.report.period,
+            denominator: results.sum(&:denominator),
+            numerator: results.sum(&:numerator),
+            improvement_notation: measure.improvement_notation,
+            reporter_display: NAME
+          )
+          Rollup.new(result: result, regime: REGIME_BY_MEASURE_ID.fetch(measure.id, "GPRA (legacy)"))
         end
       end
 

@@ -12,6 +12,29 @@ class Rook::Demo::ConsortiumTest < Minitest::Test
     @consortium = Rook::Demo::Consortium.build
   end
 
+  def test_rejects_construction_with_zero_clinics
+    error = assert_raises(ArgumentError) { Rook::Demo::Consortium.new(profiles: []) }
+    assert_match(/at least one clinic/, error.message)
+  end
+
+  def test_inverse_diabetes_rollup_declares_decrease_improvement_notation
+    rollup = @consortium.rollup.find { |r| r.measure.id == "gpra-diabetes-poor-glycemic-control" }
+    coding = rollup.result.measure_report.improvementNotation.coding.first
+
+    assert_equal "decrease", coding.code
+  end
+
+  def test_clinic_reports_and_rollup_are_distinguishable_by_reporter
+    @consortium.clinic_reports.each do |cr|
+      cr.report.results.each do |result|
+        assert_equal cr.name, result.measure_report.reporter.display
+      end
+    end
+    @consortium.rollup.each do |rollup|
+      assert_equal Rook::Demo::Consortium::NAME, rollup.result.measure_report.reporter.display
+    end
+  end
+
   def test_consortium_has_three_clinics
     assert_equal 3, @consortium.clinic_count
     assert_equal 3, @consortium.clinic_reports.size
