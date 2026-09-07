@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "date"
 require "rook/result"
 require "rook/ports"
 
@@ -16,15 +17,17 @@ module Rook
   # CVX code, batch lot number, and funding-source extension.
   #
   # Eligibility is honored only from a determinate Coverage: it must be
-  # status "active", its beneficiary (when present) must match the requested
-  # patient, and it must carry a v2 Table 0064 coding. Anything else reads
-  # as eligibility-not-available, never as an affirmative determination.
+  # status "active", currently within its period (when one is present), its
+  # beneficiary must be present and match the requested patient, and it must
+  # carry a v2 Table 0064 coding. Anything else reads as
+  # eligibility-not-available, never as an affirmative determination.
   #
-  # A lot with an unknown funding source (no funding-source extension) is
-  # treated as VFC-restricted: only a determinately VFC-eligible patient may
-  # receive it, and denial carries a distinct "lot funding source unverified"
-  # reason so staff see a lot-data problem rather than a patient
-  # determination.
+  # A lot's funding source releases it from VFC restriction only when it is
+  # a recognized non-VFC value (see KNOWN_NON_VFC_FUNDING_SOURCES). Missing,
+  # blank, or unrecognized funding is treated as VFC-restricted: only a
+  # determinately VFC-eligible patient may receive it, and denial carries a
+  # distinct "lot funding source unverified" reason so staff see a lot-data
+  # problem rather than a patient determination.
   #
   # VFC eligibility codes (IIS/HL7 Table 0064):
   #   V01 = Not VFC eligible
@@ -36,6 +39,11 @@ module Rook
   class VfcEligibilityEnforcementService
     VFC_ELIGIBLE_CODES = %w[V02 V03 V04 V05 V07].freeze
     VFC_FUNDING_SOURCES = %w[VFC].freeze
+    # The only funding sources that release a lot from VFC restriction
+    # (compared case-insensitively after trimming). Anything else —
+    # blank, unrecognized ("public", "state"), or any casing of "vfc" —
+    # keeps the lot VFC-restricted (fail closed).
+    KNOWN_NON_VFC_FUNDING_SOURCES = %w[vfa private].freeze
 
     # @param immunization_registry [Rook::Ports::ImmunizationRegistry::Base]
     # @raise [ArgumentError] when no port is supplied and none is configured
@@ -53,15 +61,15 @@ module Rook
       lot = fetch_lot(lot_id)
       return Result.failure("lot not found") unless lot
 
-      funding = registry.funding_source(lot)
-      # Lots with a known non-VFC funding source are always OK; VFC and
-      # unknown-funding lots require a determinate VFC-eligible patient.
-      return Result.success if known_non_vfc?(funding)
+      funding = funding_class(registry.funding_source(lot))
+      # Lots with a recognized non-VFC funding source are always OK; VFC and
+      # unverified-funding lots require a determinate VFC-eligible patient.
+      return Result.success if funding == :non_vfc
 
       determination = eligibility_determination(fetch_eligibility(patient_id), patient_id)
       return Result.success if determination == :eligible
 
-      if funding.nil?
+      if funding == :unverified
         Result.failure("lot funding source unverified")
       elsif determination == :unknown
         Result.failure("eligibility not available")
@@ -87,7 +95,7 @@ module Rook
       filtered = all_lots.select { |lot| registry.vaccine_code(lot) == vaccine_code }
       return filtered if determination == :eligible
 
-      filtered.select { |lot| known_non_vfc?(registry.funding_source(lot)) }
+      filtered.select { |lot| funding_class(registry.funding_source(lot)) == :non_vfc }
     end
 
     private
@@ -108,21 +116,28 @@ module Rook
       raise StandardError, "eligibility lookup failed: #{e.message}"
     end
 
-    # A funding source that is present and not VFC. nil (unknown) funding is
-    # NOT non-VFC: it fails closed as VFC-restricted.
-    def known_non_vfc?(funding)
-      !funding.nil? && !VFC_FUNDING_SOURCES.include?(funding)
+    # Classify a lot's funding source as :vfc, :non_vfc, or :unverified.
+    # Only a recognized non-VFC value releases the lot; blank, unrecognized,
+    # or missing funding fails closed as :unverified (VFC-restricted).
+    def funding_class(funding)
+      normalized = funding.to_s.strip.downcase
+      return :unverified if normalized.empty?
+      return :vfc if normalized == "vfc"
+
+      KNOWN_NON_VFC_FUNDING_SOURCES.include?(normalized) ? :non_vfc : :unverified
     end
 
     # Classify a Coverage as :eligible, :not_eligible, or :unknown.
     #
-    # Only an active Coverage whose beneficiary (when present) matches the
-    # requested patient and which carries a v2 Table 0064 coding yields a
-    # determination; everything else is :unknown (eligibility not
-    # available), never a false affirmative.
+    # Only an active, currently-in-period Coverage whose beneficiary matches
+    # the requested patient and which carries a v2 Table 0064 coding yields
+    # a determination; everything else is :unknown (eligibility not
+    # available), never a false affirmative. A Coverage without a
+    # beneficiary is indeterminate — it cannot be tied to this patient.
     def eligibility_determination(coverage, patient_id)
       return :unknown unless coverage
       return :unknown unless coverage.status == "active"
+      return :unknown unless coverage_current?(coverage)
       return :unknown unless beneficiary_matches?(coverage, patient_id)
 
       code = registry.vfc_eligibility_code(coverage)
@@ -131,9 +146,23 @@ module Rook
       VFC_ELIGIBLE_CODES.include?(code) ? :eligible : :not_eligible
     end
 
+    # Coverage.period, when present, must cover today. Unparseable dates
+    # fail closed (indeterminate).
+    def coverage_current?(coverage)
+      period = coverage.period
+      return true if period.nil?
+
+      today = Date.today
+      start_ok = period.start.nil? || Date.parse(period.start.to_s) <= today
+      end_ok = period.end.nil? || today <= Date.parse(period.end.to_s)
+      start_ok && end_ok
+    rescue ArgumentError, TypeError
+      false
+    end
+
     def beneficiary_matches?(coverage, patient_id)
       reference = coverage.beneficiary&.reference
-      return true if reference.nil?
+      return false if reference.nil?
 
       reference == "Patient/#{patient_id}" || reference == patient_id.to_s
     end

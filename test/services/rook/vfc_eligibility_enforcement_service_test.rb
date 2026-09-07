@@ -256,6 +256,79 @@ class Rook::VfcEligibilityEnforcementServiceTest < Minitest::Test
     assert_equal [ "LOT123" ], lots.map { |l| l.batch.lotNumber }
   end
 
+  # =============================================================================
+  # FUNDING-SOURCE CLASSIFICATION (only recognized non-VFC values release a lot)
+  # =============================================================================
+
+  def test_lowercase_vfc_funding_is_still_vfc_restricted
+    service = build_service(eligibility_code: "V01", lot_funding: "vfc")
+    result = service.validate(patient_id: "1", lot_id: "10")
+
+    refute result.success?
+    assert_equal "Patient is not eligible for VFC-funded vaccine", result.reason
+  end
+
+  def test_unrecognized_funding_is_restricted_with_unverified_reason
+    service = build_service(eligibility_code: "V01", lot_funding: "public")
+    result = service.validate(patient_id: "1", lot_id: "10")
+
+    refute result.success?
+    assert_equal "lot funding source unverified", result.reason
+  end
+
+  def test_blank_funding_is_restricted_with_unverified_reason
+    registry = Registry::Mock.new
+    registry.seed_eligibility(patient_id: "1", eligibility_code: "V01")
+    blank_lot = Registry.build_vaccine_lot(
+      id: "10", lot_number: "LOT123", vaccine_code: "08", funding_source: " "
+    )
+    registry.define_singleton_method(:vaccine_lot) { |_lot_id| blank_lot }
+
+    result = Rook::VfcEligibilityEnforcementService.new(immunization_registry: registry)
+      .validate(patient_id: "1", lot_id: "10")
+    refute result.success?
+    assert_equal "lot funding source unverified", result.reason
+  end
+
+  def test_recognized_non_vfc_funding_releases_lot_case_insensitively
+    %w[Private VFA].each do |funding|
+      service = build_service(eligibility_code: "V01", lot_funding: funding)
+      assert service.validate(patient_id: "1", lot_id: "10").success?,
+        "expected #{funding} to release the lot"
+    end
+  end
+
+  # =============================================================================
+  # COVERAGE DETERMINACY (period + beneficiary)
+  # =============================================================================
+
+  def test_expired_coverage_period_yields_eligibility_not_available
+    coverage = Registry.build_vfc_coverage(patient_id: "1", eligibility_code: "V02")
+    coverage.period = FHIR::Period.new(start: "2020-01-01", end: "2020-12-31")
+
+    result = service_with_coverage(coverage).validate(patient_id: "1", lot_id: "10")
+    refute result.success?
+    assert_equal "eligibility not available", result.reason
+  end
+
+  def test_future_coverage_period_yields_eligibility_not_available
+    coverage = Registry.build_vfc_coverage(patient_id: "1", eligibility_code: "V02")
+    coverage.period = FHIR::Period.new(start: (Date.today + 30).iso8601)
+
+    result = service_with_coverage(coverage).validate(patient_id: "1", lot_id: "10")
+    refute result.success?
+    assert_equal "eligibility not available", result.reason
+  end
+
+  def test_coverage_without_beneficiary_yields_eligibility_not_available
+    coverage = Registry.build_vfc_coverage(patient_id: "1", eligibility_code: "V02")
+    coverage.beneficiary = nil
+
+    result = service_with_coverage(coverage).validate(patient_id: "1", lot_id: "10")
+    refute result.success?
+    assert_equal "eligibility not available", result.reason
+  end
+
   def test_mock_rejects_seeding_a_lot_without_a_funding_source
     registry = Registry::Mock.new
 
@@ -361,6 +434,15 @@ class Rook::VfcEligibilityEnforcementServiceTest < Minitest::Test
 
   # Registry serving lot "10" with NO funding-source extension — the
   # non-conformant adapter shape the Mock's seed_lot refuses to build.
+  # Service whose eligibility lookup returns the given Coverage, with a
+  # standard VFC lot seeded.
+  def service_with_coverage(coverage)
+    registry = Registry::Mock.new
+    registry.seed_lot(id: "10", lot_number: "LOT123", vaccine_code: "08", funding_source: "VFC")
+    registry.define_singleton_method(:vfc_eligibility) { |_patient_id| coverage }
+    Rook::VfcEligibilityEnforcementService.new(immunization_registry: registry)
+  end
+
   def unknown_funding_registry(eligibility_code:)
     registry = Registry::Mock.new
     if eligibility_code
