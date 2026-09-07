@@ -25,13 +25,16 @@ module Rook
     class Report
       DEFAULT_PERIOD = ReportingPeriod.new(Date.new(2025, 1, 1), Date.new(2025, 12, 31))
 
-      # Generic, non-identifying label. NO real clinic/tribe/partner names.
+      # Generic, non-identifying labels. NO real clinic/tribe/partner names —
+      # "Epic" names the EHR platform flavor of the synthetic export only.
       CLINIC_LABEL = "a tribal clinic (synthetic demo data)"
+      EPIC_CLINIC_LABEL = "a tribal clinic on Epic (synthetic demo data)"
 
-      def self.uds
-        new(population: SyntheticPopulation.default,
+      def self.uds(population: SyntheticPopulation.default, clinic_label: CLINIC_LABEL)
+        new(population: population,
           framework: "UDS Table 6B (HRSA)",
-          measures: uds_measures)
+          measures: uds_measures,
+          clinic_label: clinic_label)
       end
 
       # Kept for backward compatibility: the original UDS view.
@@ -39,10 +42,11 @@ module Rook
         uds
       end
 
-      def self.gpra
-        new(population: SyntheticPopulation.default,
+      def self.gpra(population: SyntheticPopulation.default, clinic_label: CLINIC_LABEL)
+        new(population: population,
           framework: "IHS CRS / GPRA National Clinical Measures",
-          measures: gpra_measures)
+          measures: gpra_measures,
+          clinic_label: clinic_label)
       end
 
       def initialize(population:, framework: "UDS Table 6B (HRSA)",
