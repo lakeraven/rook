@@ -1,0 +1,35 @@
+{
+  "resourceType": "ValueSet",
+  "id": "uds-payer-category",
+  "url": "https://terminology.lakeraven.com/ValueSet/uds-payer-category",
+  "name": "UDSPayerCategoryValues",
+  "title": "UDS Payer Category Values",
+  "status": "active",
+  "experimental": false,
+  "publisher": "Lakeraven",
+  "description": "All UDS payer categories — the admissible Coverage.type codes on normalized supplemental Coverage resources.",
+  "compose": {
+    "include": [
+      {
+        "system": "https://terminology.lakeraven.com/CodeSystem/uds-payer-category",
+        "concept": [
+          {
+            "code": "medicaid"
+          },
+          {
+            "code": "medicare"
+          },
+          {
+            "code": "private"
+          },
+          {
+            "code": "uninsured"
+          },
+          {
+            "code": "other-public"
+          }
+        ]
+      }
+    ]
+  }
+}

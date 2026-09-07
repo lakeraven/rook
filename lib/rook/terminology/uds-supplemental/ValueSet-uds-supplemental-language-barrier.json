@@ -1,0 +1,26 @@
+{
+  "resourceType": "ValueSet",
+  "id": "uds-supplemental-language-barrier",
+  "url": "https://terminology.lakeraven.com/ValueSet/uds-supplemental-language-barrier",
+  "name": "UDSSupplementalLanguageBarrier",
+  "title": "UDS Supplemental Language Barrier Values",
+  "status": "active",
+  "experimental": false,
+  "publisher": "Lakeraven",
+  "description": "Language barrier values — the admissible valueCodeableConcept codes for the uds-supplemental-attribute code \"language-barrier\".",
+  "compose": {
+    "include": [
+      {
+        "system": "https://terminology.lakeraven.com/CodeSystem/uds-supplemental-value",
+        "concept": [
+          {
+            "code": "best-served-other-language"
+          },
+          {
+            "code": "english-proficient"
+          }
+        ]
+      }
+    ]
+  }
+}

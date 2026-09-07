@@ -1,0 +1,20 @@
+{
+  "resourceType": "CodeSystem",
+  "id": "uds-payer-category",
+  "url": "https://terminology.lakeraven.com/CodeSystem/uds-payer-category",
+  "name": "UDSPayerCategory",
+  "title": "UDS Payer Category",
+  "status": "active",
+  "experimental": false,
+  "publisher": "Lakeraven",
+  "description": "UDS payer categories (UDS Table 4 insurance lines). Not a supplemental attribute Observation — payer category rides as FHIR Coverage resources with Coverage.type coded from this system; dual-eligibles carry Medicare and Medicaid Coverages simultaneously.",
+  "caseSensitive": true,
+  "content": "complete",
+  "concept": [
+    { "code": "medicaid", "display": "Medicaid / CHIP" },
+    { "code": "medicare", "display": "Medicare" },
+    { "code": "private", "display": "Private insurance" },
+    { "code": "uninsured", "display": "Uninsured / self-pay" },
+    { "code": "other-public", "display": "Other public insurance" }
+  ]
+}

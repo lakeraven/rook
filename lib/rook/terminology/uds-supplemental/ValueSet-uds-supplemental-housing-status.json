@@ -1,0 +1,44 @@
+{
+  "resourceType": "ValueSet",
+  "id": "uds-supplemental-housing-status",
+  "url": "https://terminology.lakeraven.com/ValueSet/uds-supplemental-housing-status",
+  "name": "UDSSupplementalHousingStatus",
+  "title": "UDS Supplemental Housing Status Values",
+  "status": "active",
+  "experimental": false,
+  "publisher": "Lakeraven",
+  "description": "Housing status values (UDS Table 4 shelter categories) — the admissible valueCodeableConcept codes for the uds-supplemental-attribute code \"housing-status\".",
+  "compose": {
+    "include": [
+      {
+        "system": "https://terminology.lakeraven.com/CodeSystem/uds-supplemental-value",
+        "concept": [
+          {
+            "code": "housed"
+          },
+          {
+            "code": "homeless-shelter"
+          },
+          {
+            "code": "doubling-up"
+          },
+          {
+            "code": "unsheltered"
+          },
+          {
+            "code": "transitional"
+          },
+          {
+            "code": "permanent-supportive"
+          },
+          {
+            "code": "other"
+          },
+          {
+            "code": "unknown"
+          }
+        ]
+      }
+    ]
+  }
+}

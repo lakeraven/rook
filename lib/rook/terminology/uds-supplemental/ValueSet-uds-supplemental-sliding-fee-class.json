@@ -1,0 +1,35 @@
+{
+  "resourceType": "ValueSet",
+  "id": "uds-supplemental-sliding-fee-class",
+  "url": "https://terminology.lakeraven.com/ValueSet/uds-supplemental-sliding-fee-class",
+  "name": "UDSSupplementalSlidingFeeClass",
+  "title": "UDS Supplemental Sliding Fee Class Values",
+  "status": "active",
+  "experimental": false,
+  "publisher": "Lakeraven",
+  "description": "Sliding-fee discount class values — the admissible valueCodeableConcept codes for the uds-supplemental-attribute code \"sliding-fee-class\".",
+  "compose": {
+    "include": [
+      {
+        "system": "https://terminology.lakeraven.com/CodeSystem/uds-supplemental-value",
+        "concept": [
+          {
+            "code": "class-a"
+          },
+          {
+            "code": "class-b"
+          },
+          {
+            "code": "class-c"
+          },
+          {
+            "code": "class-d"
+          },
+          {
+            "code": "class-e"
+          }
+        ]
+      }
+    ]
+  }
+}

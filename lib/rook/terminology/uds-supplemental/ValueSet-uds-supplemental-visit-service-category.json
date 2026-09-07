@@ -1,0 +1,41 @@
+{
+  "resourceType": "ValueSet",
+  "id": "uds-supplemental-visit-service-category",
+  "url": "https://terminology.lakeraven.com/ValueSet/uds-supplemental-visit-service-category",
+  "name": "UDSSupplementalVisitServiceCategory",
+  "title": "UDS Supplemental Visit Service Category Values",
+  "status": "active",
+  "experimental": false,
+  "publisher": "Lakeraven",
+  "description": "UDS visit service-category values (UDS Table 5) — the admissible valueCodeableConcept codes for the uds-supplemental-attribute code \"visit-service-category\".",
+  "compose": {
+    "include": [
+      {
+        "system": "https://terminology.lakeraven.com/CodeSystem/uds-supplemental-value",
+        "concept": [
+          {
+            "code": "medical"
+          },
+          {
+            "code": "dental"
+          },
+          {
+            "code": "mental-health"
+          },
+          {
+            "code": "substance-use"
+          },
+          {
+            "code": "vision"
+          },
+          {
+            "code": "enabling"
+          },
+          {
+            "code": "other"
+          }
+        ]
+      }
+    ]
+  }
+}

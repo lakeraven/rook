@@ -1,0 +1,26 @@
+{
+  "resourceType": "ValueSet",
+  "id": "uds-supplemental-veteran-status",
+  "url": "https://terminology.lakeraven.com/ValueSet/uds-supplemental-veteran-status",
+  "name": "UDSSupplementalVeteranStatus",
+  "title": "UDS Supplemental Veteran Status Values",
+  "status": "active",
+  "experimental": false,
+  "publisher": "Lakeraven",
+  "description": "Veteran status values — the admissible valueCodeableConcept codes for the uds-supplemental-attribute code \"veteran-status\".",
+  "compose": {
+    "include": [
+      {
+        "system": "https://terminology.lakeraven.com/CodeSystem/uds-supplemental-value",
+        "concept": [
+          {
+            "code": "veteran"
+          },
+          {
+            "code": "non-veteran"
+          }
+        ]
+      }
+    ]
+  }
+}

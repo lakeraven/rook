@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "rook/ingest/source_descriptor"
+require "rook/source_descriptor"
 require "rook/ingest/ndjson_feed"
 
 module Rook
@@ -29,6 +29,10 @@ module Rook
   # silently double-count denominators, so +load+ raises instead.
   # Deduplication/merge semantics belong to the warehouse layer later.
   module Ingest
+    # The canonical descriptor lives at Rook::SourceDescriptor (shared with
+    # Rook::Ports); this alias keeps the original ingest-scoped name working.
+    SourceDescriptor = Rook::SourceDescriptor
+
     # Two feeds contributed the same (resourceType, id) — see Rook::Ingest.
     class DuplicateResourceError < StandardError; end
 
