@@ -49,9 +49,17 @@ module Rook
       private
 
       def parse(line, path, lineno)
-        JSON.parse(line)
-      rescue JSON::ParserError => e
-        raise JSON::ParserError, "malformed NDJSON at #{path}:#{lineno}: #{e.message}"
+        resource = begin
+          JSON.parse(line)
+        rescue JSON::ParserError => e
+          raise JSON::ParserError, "malformed NDJSON at #{path}:#{lineno}: #{e.message}"
+        end
+        unless resource.is_a?(Hash) && resource["resourceType"].is_a?(String) && !resource["resourceType"].empty?
+          raise MalformedResourceError,
+            "not a FHIR resource at #{path}:#{lineno}: " \
+            "expected a JSON object with a non-empty resourceType"
+        end
+        resource
       end
 
       def stamp(resource)

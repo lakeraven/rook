@@ -93,11 +93,27 @@ class Rook::Demo::SyntheticPopulationIngestTest < Minitest::Test
     assert_kind_of Numeric, latest.value
   end
 
+  HOUSING_STATUS_VALUES =
+    %w[housed homeless-shelter doubling-up unsheltered transitional
+       permanent-supportive other unknown].freeze
+
   def test_supplemental_values_ride_under_the_shared_value_code_system
     housing = @population.patients.flat_map(&:observations).select { |o| o.loinc == "housing-status" }
 
     refute_empty housing
-    assert_includes %w[housed homeless-shelter doubling-up unsheltered unknown], housing.first.value
+    assert_includes HOUSING_STATUS_VALUES, housing.first.value
+
+    # The flattened struct strips the value's coding system, so assert it on
+    # the raw supplemental-feed resources: attribute codes ride under the
+    # attribute code system and coded values under the value code system.
+    raw = Rook::Ingest::NdjsonFeed.directory(
+      File.join(Rook::Demo::SyntheticPopulation::FIXTURES_DIR, "supplemental"),
+      source: Rook::Demo::SyntheticPopulation::SUPPLEMENTAL_SOURCE)
+      .each_resource.select { |r| r["resourceType"] == "Observation" }
+
+    refute_empty raw
+    assert(raw.all? { |r| r.dig("code", "coding", 0, "system") == ATTRIBUTE_CS })
+    assert(raw.all? { |r| r.dig("valueCodeableConcept", "coding", 0, "system") == VALUE_CS })
   end
 
   def test_agricultural_worker_status_uses_the_shared_attribute_vocabulary
@@ -108,27 +124,115 @@ class Rook::Demo::SyntheticPopulationIngestTest < Minitest::Test
     assert_empty statuses - %w[migratory seasonal none]
   end
 
-  # An undated supplemental observation (no effectiveDateTime) means
-  # "currently effective": always in-period, and newest over any dated reading.
+  # ---------------------------------------------------------------------------
+  # Undated-wins is scoped to supplemental registration attributes; clinical
+  # observations require a date (the shared cross-repo UDS read rule).
+  # ---------------------------------------------------------------------------
+
+  PERIOD = (Date.new(2025, 1, 1)..Date.new(2025, 12, 31))
+
+  # An undated supplemental observation means "registration-current": always
+  # in-period, and it wins over any dated reading.
   def test_undated_supplemental_observation_is_current_and_wins_over_dated
-    resources = [
-      { "resourceType" => "Patient", "id" => "u1", "birthDate" => "1980-01-01" },
-      { "resourceType" => "Observation",
-       "code" => { "coding" => [ { "system" => ATTRIBUTE_CS, "code" => "housing-status" } ] },
-       "subject" => { "reference" => "Patient/u1" },
-       "effectiveDateTime" => "2025-06-01",
-       "valueCodeableConcept" => { "coding" => [ { "system" => VALUE_CS, "code" => "unsheltered" } ] } },
-      { "resourceType" => "Observation",
-       "code" => { "coding" => [ { "system" => ATTRIBUTE_CS, "code" => "housing-status" } ] },
-       "subject" => { "reference" => "Patient/u1" },
-       "valueCodeableConcept" => { "coding" => [ { "system" => VALUE_CS, "code" => "housed" } ] } }
-    ]
-    patient = Rook::Demo::SyntheticPopulation.new(resources: resources).patients.first
-    period = Date.new(2025, 1, 1)..Date.new(2025, 12, 31)
+    patient = patient_with_observations(
+      supplemental_obs("housing-status", "unsheltered", effective: "2025-06-01"),
+      supplemental_obs("housing-status", "housed")
+    )
 
     undated = patient.observations.find { |o| o.effective_date.nil? }
-    assert undated, "missing effectiveDateTime loads as an undated observation"
-    assert_equal "housed", patient.latest_observation("housing-status", period).value
+    assert undated, "missing effective[x] loads as an undated observation"
+    assert_equal "housed", patient.latest_observation("housing-status", PERIOD).value
+  end
+
+  # Supplemental reads are "current as of period end": a value dated before
+  # the period start is still the current registration value.
+  def test_supplemental_read_is_current_as_of_period_end
+    patient = patient_with_observations(
+      supplemental_obs("housing-status", "doubling-up", effective: "2024-03-01")
+    )
+
+    assert_equal "doubling-up", patient.latest_observation("housing-status", PERIOD).value
+  end
+
+  def test_undated_clinical_observation_does_not_beat_a_dated_in_period_one
+    patient = patient_with_observations(
+      clinical_obs("4548-4", 7.2, effective: "2025-06-01"),
+      clinical_obs("4548-4", 11.0)
+    )
+
+    assert_equal 7.2, patient.latest_observation("4548-4", PERIOD).value
+  end
+
+  def test_undated_clinical_observation_never_matches_a_period_lookup
+    patient = patient_with_observations(clinical_obs("4548-4", 11.0))
+
+    assert_nil patient.latest_observation("4548-4", PERIOD)
+  end
+
+  def test_effective_period_only_observation_resolves_to_its_end
+    patient = patient_with_observations(
+      clinical_obs("4548-4", 8.4).tap do |o|
+        o["effectivePeriod"] = { "start" => "2025-04-01", "end" => "2025-04-03" }
+      end
+    )
+
+    latest = patient.latest_observation("4548-4", PERIOD)
+    assert latest, "effectivePeriod-only observation matches the period lookup"
+    assert_equal Date.new(2025, 4, 3), latest.effective_date
+  end
+
+  def test_effective_period_falls_back_to_start_and_instant_parses
+    patient = patient_with_observations(
+      clinical_obs("4548-4", 8.4).tap { |o| o["effectivePeriod"] = { "start" => "2025-04-01" } },
+      clinical_obs("8302-2", 170).tap { |o| o["effectiveInstant"] = "2025-05-01T12:00:00Z" }
+    )
+
+    assert_equal Date.new(2025, 4, 1), patient.latest_observation("4548-4", PERIOD).effective_date
+    assert_equal Date.new(2025, 5, 1), patient.latest_observation("8302-2", PERIOD).effective_date
+  end
+
+  # ---------------------------------------------------------------------------
+  # Coverage keeps status + period; payer reads honor only current coverage
+  # ---------------------------------------------------------------------------
+
+  def test_current_coverages_excludes_non_active_and_expired_but_keeps_duals
+    patient = patient_with_resources(
+      coverage("medicaid", status: "entered-in-error"),
+      coverage("private", status: "active", start: "2024-01-01", end_date: "2024-12-31"),
+      coverage("medicare", status: "active", start: "2025-01-01", end_date: nil),
+      coverage("medicaid", status: "active", start: "2025-01-01", end_date: "2025-12-31")
+    )
+    current = patient.current_coverages(Date.new(2025, 6, 30))
+
+    assert_equal 4, patient.coverages.size, "coverages stays the full uncollapsed list"
+    assert_equal %w[medicare medicaid], current.map(&:payer_category),
+      "dual-eligible: both current coverages present; entered-in-error and expired excluded"
+  end
+
+  # ---------------------------------------------------------------------------
+  # Missing/malformed subject or beneficiary references fail closed
+  # ---------------------------------------------------------------------------
+
+  def test_missing_subject_reference_raises_instead_of_vanishing
+    error = assert_raises(Rook::Ingest::MalformedResourceError) do
+      patient_with_observations(
+        clinical_obs("4548-4", 7.0, effective: "2025-06-01").tap { |o| o.delete("subject") }
+          .merge("id" => "obs-no-subject")
+      )
+    end
+
+    assert_includes error.message, "Observation/obs-no-subject"
+  end
+
+  def test_malformed_beneficiary_reference_raises
+    error = assert_raises(Rook::Ingest::MalformedResourceError) do
+      patient_with_resources(
+        coverage("medicaid", status: "active").merge(
+          "id" => "cov-bad-ref", "beneficiary" => { "reference" => "Patient/" })
+      )
+    end
+
+    assert_includes error.message, "Coverage/cov-bad-ref"
   end
 
   # ---------------------------------------------------------------------------
@@ -146,5 +250,47 @@ class Rook::Demo::SyntheticPopulationIngestTest < Minitest::Test
 
     assert_equal 1, population.patients.size
     assert_nil population.patients.first.observations.first.source_id
+  end
+
+  private
+
+  def patient_with_resources(*resources)
+    all = [ { "resourceType" => "Patient", "id" => "u1", "birthDate" => "1980-01-01" }, *resources ]
+    Rook::Demo::SyntheticPopulation.new(resources: all).patients.first
+  end
+  alias patient_with_observations patient_with_resources
+
+  def supplemental_obs(attribute, value, effective: nil)
+    obs = {
+      "resourceType" => "Observation",
+      "code" => { "coding" => [ { "system" => ATTRIBUTE_CS, "code" => attribute } ] },
+      "subject" => { "reference" => "Patient/u1" },
+      "valueCodeableConcept" => { "coding" => [ { "system" => VALUE_CS, "code" => value } ] }
+    }
+    obs["effectiveDateTime"] = effective if effective
+    obs
+  end
+
+  def clinical_obs(loinc, value, effective: nil)
+    obs = {
+      "resourceType" => "Observation",
+      "code" => { "coding" => [ { "system" => "http://loinc.org", "code" => loinc } ] },
+      "subject" => { "reference" => "Patient/u1" },
+      "valueQuantity" => { "value" => value }
+    }
+    obs["effectiveDateTime"] = effective if effective
+    obs
+  end
+
+  def coverage(payer, status:, start: nil, end_date: nil)
+    cov = {
+      "resourceType" => "Coverage",
+      "status" => status,
+      "type" => { "coding" => [ { "code" => payer } ] },
+      "beneficiary" => { "reference" => "Patient/u1" }
+    }
+    period = { "start" => start, "end" => end_date }.compact
+    cov["period"] = period unless period.empty?
+    cov
   end
 end

@@ -355,6 +355,8 @@ def build_supplemental
       status: "active",
       type: { coding: [ { system: PAYER_CS, code: payer } ], text: payer },
       beneficiary: { reference: format("Patient/demo-pt-%03d", patient_seq) },
+      # R4 Coverage requires payor 1..* — a display-only synthetic org.
+      payor: [ { display: "Synthetic Payer Organization (demo)" } ],
       period: { start: "2025-01-01", end: "2025-12-31" }
     }
   end

@@ -32,12 +32,30 @@ module Rook
     # Two feeds contributed the same (resourceType, id) — see Rook::Ingest.
     class DuplicateResourceError < StandardError; end
 
+    # Two feeds in one +load+ carry the same SourceDescriptor id. The
+    # descriptor id is the provenance key: it is all that +meta.source+
+    # persists, so feeds sharing an id would be indistinguishable in audit
+    # evidence even if their platform/channel differ.
+    class DuplicateSourceError < StandardError; end
+
+    # A parsed ingest payload is not a usable FHIR resource (wrong JSON shape,
+    # missing resourceType, or a missing/malformed subject reference).
+    class MalformedResourceError < StandardError; end
+
     # Merges one or more feeds into a single resource set, preserving feed
     # order and per-resource provenance. In-memory only for now — the
     # warehouse-backed implementation replaces the storage, not this seam.
-    # Raises DuplicateResourceError when feeds are not disjoint by
-    # (resourceType, id).
+    # Raises DuplicateSourceError when two feeds share a descriptor id, and
+    # DuplicateResourceError when feeds are not disjoint by (resourceType, id).
     def self.load(*feeds)
+      duplicate_ids = feeds.map { |feed| feed.source.id }.tally.select { |_, count| count > 1 }.keys
+      unless duplicate_ids.empty?
+        raise DuplicateSourceError,
+          "multiple feeds share source descriptor id(s) #{duplicate_ids.join(', ')} — " \
+          "the descriptor id is the provenance key persisted in meta.source, " \
+          "so every feed in a load must carry a unique id"
+      end
+
       resources = feeds.flat_map { |feed| feed.each_resource.to_a }
       seen = {}
       resources.each do |resource|

@@ -63,6 +63,39 @@ class Rook::Ingest::NdjsonFeedTest < Minitest::Test
     end
   end
 
+  def test_non_resource_json_reports_file_and_line
+    [ "{}", "[1,2]", "\"Patient\"", JSON.generate("resourceType" => "") ].each do |bad_line|
+      with_ndjson({}) do |dir|
+        path = File.join(dir, "Patient.ndjson")
+        File.write(path, "#{JSON.generate(patient('p1'))}\n#{bad_line}\n")
+        feed = Rook::Ingest::NdjsonFeed.directory(dir, source: PRIMARY)
+
+        error = assert_raises(Rook::Ingest::MalformedResourceError) { feed.each_resource.to_a }
+        assert_includes error.message, "#{path}:2"
+        assert_includes error.message, "resourceType"
+      end
+    end
+  end
+
+  def test_load_raises_when_two_feeds_share_a_descriptor_id
+    # The descriptor id is the provenance key persisted in meta.source: two
+    # feeds sharing an id would be indistinguishable in audit evidence even
+    # with different platform/channel.
+    same_id_other_channel = Rook::Ingest::SourceDescriptor.new(
+      id: "test-fhir", platform: :epic, channel: :supplemental)
+    with_ndjson("Patient.ndjson" => [ patient("p1") ]) do |primary_dir|
+      with_ndjson("Coverage.ndjson" => [ { "resourceType" => "Coverage", "id" => "cov1" } ]) do |suppl_dir|
+        error = assert_raises(Rook::Ingest::DuplicateSourceError) do
+          Rook::Ingest.load(
+            Rook::Ingest::NdjsonFeed.directory(primary_dir, source: PRIMARY),
+            Rook::Ingest::NdjsonFeed.directory(suppl_dir, source: same_id_other_channel))
+        end
+
+        assert_includes error.message, "test-fhir"
+      end
+    end
+  end
+
   def test_directory_feed_raises_when_no_ndjson_files_present
     Dir.mktmpdir do |dir|
       error = assert_raises(ArgumentError) do

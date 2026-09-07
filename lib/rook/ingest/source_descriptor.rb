@@ -18,6 +18,11 @@ module Rook
     # Keeping the channels distinguishable per resource is what lets measure
     # evaluation and UDS table generation substantiate which channel and
     # platform contributed a data element.
+    #
+    # +id+ is the provenance key: it is the only part of the descriptor that
+    # +meta.source+ persists, so it must be unique across the feeds merged in
+    # one Ingest.load (enforced there) — two feeds sharing an id would be
+    # indistinguishable in audit evidence regardless of platform/channel.
     class SourceDescriptor
       PLATFORMS = %i[rpms epic nextgen greenway ecw].freeze
       CHANNELS = %i[primary_fhir supplemental].freeze
