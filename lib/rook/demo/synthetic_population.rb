@@ -32,18 +32,26 @@ module Rook
           !(condition_codes & Array(codes)).empty?
         end
 
-        # Most recent Observation for a LOINC code whose effective date falls
-        # within the (inclusive) period, or nil if none.
-        def latest_observation(loinc_code, period)
+        # Most recent Observation whose code is in +loinc_codes+ (a single code
+        # or a value-set expansion) and whose effective date falls within the
+        # (inclusive) period, or nil if none.
+        def latest_observation(loinc_codes, period)
+          codes = Array(loinc_codes)
           observations
-            .select { |o| o.loinc == loinc_code && period.cover?(o.effective_date) }
+            .select { |o| codes.include?(o.loinc) && period.cover?(o.effective_date) }
             .max_by(&:effective_date)
         end
       end
 
       # A flattened Observation. For blood pressure, +components+ maps a LOINC
       # code to its numeric value (systolic 8480-6, diastolic 8462-4).
-      Observation = Struct.new(:loinc, :value, :effective_date, :components, keyword_init: true)
+      Observation = Struct.new(:loinc, :value, :effective_date, :components, keyword_init: true) do
+        # Value of the first component whose code is in +loinc_codes+ (a single
+        # code or a value-set expansion), or nil.
+        def component_value(loinc_codes)
+          components.values_at(*Array(loinc_codes)).compact.first
+        end
+      end
 
       def self.default
         load_file(DEFAULT_FIXTURE)
