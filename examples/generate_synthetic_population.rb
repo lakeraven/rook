@@ -4,9 +4,11 @@
 #
 # Deterministic generator for the synthetic FHIR R4 population used by the
 # demo-scoped UDS quality report (Rook::Demo). Run once to (re)produce the
-# committed fixture at:
+# committed NDJSON fixtures (FHIR Bulk Data shape — one file per resourceType,
+# one resource per line) as two ingest feeds from the same synthetic EHR:
 #
-#   lib/rook/demo/fixtures/synthetic_population.json
+#   lib/rook/demo/fixtures/primary_fhir/{Patient,Condition,Observation}.ndjson
+#   lib/rook/demo/fixtures/supplemental/{Observation,Coverage}.ndjson
 #
 # Usage:
 #   ruby examples/generate_synthetic_population.rb
@@ -302,13 +304,73 @@ def build_bundle
   }
 end
 
-if __FILE__ == $PROGRAM_NAME
-  out = File.expand_path("../lib/rook/demo/fixtures/synthetic_population.json", __dir__)
+# Supplemental-channel feed: extra-FHIR attributes UDS reporting needs that
+# vendor FHIR APIs don't expose (sliding-fee class, housing status,
+# migratory/seasonal agricultural worker status, veteran status, payer
+# category), already normalized into FHIR shapes under the internal attribute
+# code system — the shape platform adapters deliver. Kept tiny — its job is to
+# exercise the two-channel ingest seam and per-channel provenance, not to
+# drive a measure.
+ATTRIBUTE_CS = "https://terminology.lakeraven.com/CodeSystem/uds-supplemental-attribute"
+PAYER_CS = "https://terminology.lakeraven.com/CodeSystem/uds-payer-category"
+
+SUPPLEMENTAL_PROFILES = [
+  # [patient_seq, sliding-fee class, housing status, MSAW, veteran, payer]
+  [ 1, "class-a", "housed", "not-msaw", "veteran", "medicaid" ],
+  [ 2, "class-c", "homeless-shelter", "not-msaw", "not-veteran", "medicare" ],
+  [ 3, "class-e", "housed", "seasonal", "not-veteran", "uninsured" ],
+  [ 5, "class-b", "doubling-up", "migratory", "not-veteran", "private" ],
+  [ 8, "class-d", "housed", "not-msaw", "veteran", "medicaid" ]
+].freeze
+
+def supplemental_observation(patient_seq:, seq:, attribute:, value:)
+  {
+    resourceType: "Observation",
+    id: format("demo-suppl-obs-%03d", seq),
+    status: "final",
+    category: [ { coding: [ { system: "http://terminology.hl7.org/CodeSystem/observation-category",
+                          code: "social-history" } ] } ],
+    code: { coding: [ { system: ATTRIBUTE_CS, code: attribute } ], text: attribute },
+    subject: { reference: format("Patient/demo-pt-%03d", patient_seq) },
+    effectiveDateTime: "2025-12-31",
+    valueCodeableConcept: { coding: [ { system: ATTRIBUTE_CS, code: value } ], text: value }
+  }
+end
+
+def build_supplemental
+  obs_seq = 0
+  SUPPLEMENTAL_PROFILES.flat_map do |patient_seq, fee_class, housing, msaw, veteran, payer|
+    attributes = { "sliding-fee-class" => fee_class, "housing-status" => housing,
+                  "msaw-status" => msaw, "veteran-status" => veteran }
+    resources = attributes.map do |attribute, value|
+      obs_seq += 1
+      supplemental_observation(patient_seq: patient_seq, seq: obs_seq, attribute: attribute, value: value)
+    end
+    resources << {
+      resourceType: "Coverage",
+      id: format("demo-suppl-cov-%03d", patient_seq),
+      status: "active",
+      type: { coding: [ { system: PAYER_CS, code: payer } ], text: payer },
+      beneficiary: { reference: format("Patient/demo-pt-%03d", patient_seq) },
+      period: { start: "2025-01-01", end: "2025-12-31" }
+    }
+  end
+end
+
+# Writes +resources+ as Bulk-Data NDJSON into +dir+, one file per resourceType.
+def write_ndjson_feed(dir, resources)
   require "fileutils"
-  FileUtils.mkdir_p(File.dirname(out))
-  File.write(out, "#{JSON.pretty_generate(build_bundle)}\n")
-  bundle = JSON.parse(File.read(out))
-  patients = bundle["entry"].count { |e| e["resource"]["resourceType"] == "Patient" }
-  puts "Wrote #{out}"
-  puts "  #{bundle["entry"].size} resources, #{patients} patients"
+  FileUtils.mkdir_p(dir)
+  resources.group_by { |r| r[:resourceType] }.each do |type, of_type|
+    path = File.join(dir, "#{type}.ndjson")
+    File.write(path, of_type.map { |r| JSON.generate(r) }.join("\n") + "\n")
+    puts "Wrote #{path} (#{of_type.size} resources)"
+  end
+end
+
+if __FILE__ == $PROGRAM_NAME
+  fixtures = File.expand_path("../lib/rook/demo/fixtures", __dir__)
+  write_ndjson_feed(File.join(fixtures, "primary_fhir"),
+    build_bundle[:entry].map { |e| e[:resource] })
+  write_ndjson_feed(File.join(fixtures, "supplemental"), build_supplemental)
 end
