@@ -55,8 +55,13 @@ module Rook
         "#{URI_PREFIX}#{id}"
       end
 
+      # The feed id encoded in +uri+, or nil for URIs outside our scheme —
+      # +meta.source+ can arrive server-populated with foreign values (e.g. a
+      # FHIR base URL), which must not read back as fake feed ids.
       def self.id_from_uri(uri)
-        uri&.delete_prefix(URI_PREFIX)
+        return nil unless uri&.start_with?(URI_PREFIX)
+
+        uri.delete_prefix(URI_PREFIX)
       end
     end
   end

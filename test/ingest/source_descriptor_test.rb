@@ -49,4 +49,12 @@ class Rook::Ingest::SourceDescriptorTest < Minitest::Test
   def test_id_from_uri_handles_nil
     assert_nil Rook::Ingest::SourceDescriptor.id_from_uri(nil)
   end
+
+  def test_id_from_uri_rejects_foreign_meta_source_values
+    # meta.source can arrive server-populated (e.g. a FHIR base URL); a URI
+    # outside our scheme must not read back as a fake feed id.
+    assert_nil Rook::Ingest::SourceDescriptor.id_from_uri("https://fhir.example.test/r4/Patient")
+    assert_nil Rook::Ingest::SourceDescriptor.id_from_uri("urn:uuid:0f3a")
+    assert_nil Rook::Ingest::SourceDescriptor.id_from_uri("")
+  end
 end

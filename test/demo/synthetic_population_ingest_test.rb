@@ -7,9 +7,11 @@ require "rook/demo"
 # Rook::Ingest seam (Bulk-Data NDJSON feeds) with per-resource source
 # provenance retained: the primary FHIR channel merged with the supplemental
 # channel of extra-FHIR UDS attributes (sliding-fee class, housing status,
-# MSAW/veteran status, payer category) normalized into FHIR shapes.
+# agricultural-worker/veteran status, payer category) normalized into FHIR
+# shapes.
 class Rook::Demo::SyntheticPopulationIngestTest < Minitest::Test
   ATTRIBUTE_CS = "https://terminology.lakeraven.com/CodeSystem/uds-supplemental-attribute"
+  VALUE_CS = "https://terminology.lakeraven.com/CodeSystem/uds-supplemental-value"
 
   def setup
     @population = Rook::Demo::SyntheticPopulation.default
@@ -78,6 +80,10 @@ class Rook::Demo::SyntheticPopulationIngestTest < Minitest::Test
     assert_includes with_attributes.map(&:id), "demo-pt-001"
   end
 
+  # NOTE: the demo reader matches bare code strings (no coding-system check);
+  # this holds because LOINC codes and supplemental attribute codes are
+  # disjoint sets by naming convention. System-aware matching arrives with the
+  # production reader.
   def test_supplemental_attributes_do_not_disturb_clinical_measure_lookup
     patient = @population.patients.find { |p| p.id == "demo-pt-001" }
     period = Date.new(2025, 1, 1)..Date.new(2025, 12, 31)
@@ -85,6 +91,44 @@ class Rook::Demo::SyntheticPopulationIngestTest < Minitest::Test
     latest = patient.latest_observation("4548-4", period)
     assert latest, "clinical HbA1c lookup still works alongside supplemental observations"
     assert_kind_of Numeric, latest.value
+  end
+
+  def test_supplemental_values_ride_under_the_shared_value_code_system
+    housing = @population.patients.flat_map(&:observations).select { |o| o.loinc == "housing-status" }
+
+    refute_empty housing
+    assert_includes %w[housed homeless-shelter doubling-up unsheltered unknown], housing.first.value
+  end
+
+  def test_agricultural_worker_status_uses_the_shared_attribute_vocabulary
+    statuses = @population.patients.flat_map(&:observations)
+      .select { |o| o.loinc == "agricultural-worker-status" }.map(&:value)
+
+    assert_equal 5, statuses.size
+    assert_empty statuses - %w[migratory seasonal none]
+  end
+
+  # An undated supplemental observation (no effectiveDateTime) means
+  # "currently effective": always in-period, and newest over any dated reading.
+  def test_undated_supplemental_observation_is_current_and_wins_over_dated
+    resources = [
+      { "resourceType" => "Patient", "id" => "u1", "birthDate" => "1980-01-01" },
+      { "resourceType" => "Observation",
+       "code" => { "coding" => [ { "system" => ATTRIBUTE_CS, "code" => "housing-status" } ] },
+       "subject" => { "reference" => "Patient/u1" },
+       "effectiveDateTime" => "2025-06-01",
+       "valueCodeableConcept" => { "coding" => [ { "system" => VALUE_CS, "code" => "unsheltered" } ] } },
+      { "resourceType" => "Observation",
+       "code" => { "coding" => [ { "system" => ATTRIBUTE_CS, "code" => "housing-status" } ] },
+       "subject" => { "reference" => "Patient/u1" },
+       "valueCodeableConcept" => { "coding" => [ { "system" => VALUE_CS, "code" => "housed" } ] } }
+    ]
+    patient = Rook::Demo::SyntheticPopulation.new(resources: resources).patients.first
+    period = Date.new(2025, 1, 1)..Date.new(2025, 12, 31)
+
+    undated = patient.observations.find { |o| o.effective_date.nil? }
+    assert undated, "missing effectiveDateTime loads as an undated observation"
+    assert_equal "housed", patient.latest_observation("housing-status", period).value
   end
 
   # ---------------------------------------------------------------------------

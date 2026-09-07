@@ -23,12 +23,34 @@ module Rook
   # channel/platform contributed a data element; retaining per-resource
   # provenance from ingest onward is what makes that substantiation possible
   # downstream.
+  #
+  # Feeds merged in one +load+ must be disjoint by resource identity
+  # (resourceType, id): two feeds contributing the same resource would
+  # silently double-count denominators, so +load+ raises instead.
+  # Deduplication/merge semantics belong to the warehouse layer later.
   module Ingest
+    # Two feeds contributed the same (resourceType, id) — see Rook::Ingest.
+    class DuplicateResourceError < StandardError; end
+
     # Merges one or more feeds into a single resource set, preserving feed
     # order and per-resource provenance. In-memory only for now — the
     # warehouse-backed implementation replaces the storage, not this seam.
+    # Raises DuplicateResourceError when feeds are not disjoint by
+    # (resourceType, id).
     def self.load(*feeds)
-      feeds.flat_map { |feed| feed.each_resource.to_a }
+      resources = feeds.flat_map { |feed| feed.each_resource.to_a }
+      seen = {}
+      resources.each do |resource|
+        key = [ resource["resourceType"], resource["id"] ]
+        if (prior = seen[key])
+          raise DuplicateResourceError,
+            "duplicate resource #{key.first}/#{key.last}: contributed by " \
+            "both #{prior.inspect} and #{source_id(resource).inspect} — " \
+            "feeds must be disjoint by (resourceType, id)"
+        end
+        seen[key] = source_id(resource)
+      end
+      resources
     end
 
     # The source id a resource was ingested from, recovered from +meta.source+

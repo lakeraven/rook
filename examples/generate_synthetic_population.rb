@@ -307,20 +307,23 @@ end
 # Supplemental-channel feed: extra-FHIR attributes UDS reporting needs that
 # vendor FHIR APIs don't expose (sliding-fee class, housing status,
 # migratory/seasonal agricultural worker status, veteran status, payer
-# category), already normalized into FHIR shapes under the internal attribute
-# code system — the shape platform adapters deliver. Kept tiny — its job is to
-# exercise the two-channel ingest seam and per-channel provenance, not to
-# drive a measure.
+# category), already normalized into FHIR shapes under the shared Lakeraven
+# UDS-supplemental code systems — the shape platform adapters deliver.
+# Attribute codes ride under ATTRIBUTE_CS, their coded values under VALUE_CS,
+# and payer category is NOT an Observation: it rides as a Coverage whose
+# +type.coding+ uses PAYER_CS. Kept tiny — its job is to exercise the
+# two-channel ingest seam and per-channel provenance, not to drive a measure.
 ATTRIBUTE_CS = "https://terminology.lakeraven.com/CodeSystem/uds-supplemental-attribute"
+VALUE_CS = "https://terminology.lakeraven.com/CodeSystem/uds-supplemental-value"
 PAYER_CS = "https://terminology.lakeraven.com/CodeSystem/uds-payer-category"
 
 SUPPLEMENTAL_PROFILES = [
-  # [patient_seq, sliding-fee class, housing status, MSAW, veteran, payer]
-  [ 1, "class-a", "housed", "not-msaw", "veteran", "medicaid" ],
-  [ 2, "class-c", "homeless-shelter", "not-msaw", "not-veteran", "medicare" ],
-  [ 3, "class-e", "housed", "seasonal", "not-veteran", "uninsured" ],
-  [ 5, "class-b", "doubling-up", "migratory", "not-veteran", "private" ],
-  [ 8, "class-d", "housed", "not-msaw", "veteran", "medicaid" ]
+  # [patient_seq, sliding-fee class, housing status, agricultural worker, veteran, payer]
+  [ 1, "class-a", "housed", "none", "veteran", "medicaid" ],
+  [ 2, "class-c", "homeless-shelter", "none", "non-veteran", "medicare" ],
+  [ 3, "class-e", "housed", "seasonal", "non-veteran", "uninsured" ],
+  [ 5, "class-b", "doubling-up", "migratory", "non-veteran", "private" ],
+  [ 8, "class-d", "housed", "none", "veteran", "medicaid" ]
 ].freeze
 
 def supplemental_observation(patient_seq:, seq:, attribute:, value:)
@@ -333,15 +336,15 @@ def supplemental_observation(patient_seq:, seq:, attribute:, value:)
     code: { coding: [ { system: ATTRIBUTE_CS, code: attribute } ], text: attribute },
     subject: { reference: format("Patient/demo-pt-%03d", patient_seq) },
     effectiveDateTime: "2025-12-31",
-    valueCodeableConcept: { coding: [ { system: ATTRIBUTE_CS, code: value } ], text: value }
+    valueCodeableConcept: { coding: [ { system: VALUE_CS, code: value } ], text: value }
   }
 end
 
 def build_supplemental
   obs_seq = 0
-  SUPPLEMENTAL_PROFILES.flat_map do |patient_seq, fee_class, housing, msaw, veteran, payer|
+  SUPPLEMENTAL_PROFILES.flat_map do |patient_seq, fee_class, housing, ag_worker, veteran, payer|
     attributes = { "sliding-fee-class" => fee_class, "housing-status" => housing,
-                  "msaw-status" => msaw, "veteran-status" => veteran }
+                  "agricultural-worker-status" => ag_worker, "veteran-status" => veteran }
     resources = attributes.map do |attribute, value|
       obs_seq += 1
       supplemental_observation(patient_seq: patient_seq, seq: obs_seq, attribute: attribute, value: value)
@@ -358,9 +361,12 @@ def build_supplemental
 end
 
 # Writes +resources+ as Bulk-Data NDJSON into +dir+, one file per resourceType.
+# Clears any previously generated .ndjson files first so renamed/removed
+# resource types can't leave stale files behind.
 def write_ndjson_feed(dir, resources)
   require "fileutils"
   FileUtils.mkdir_p(dir)
+  FileUtils.rm_f(Dir[File.join(dir, "*.ndjson")])
   resources.group_by { |r| r[:resourceType] }.each do |type, of_type|
     path = File.join(dir, "#{type}.ndjson")
     File.write(path, of_type.map { |r| JSON.generate(r) }.join("\n") + "\n")

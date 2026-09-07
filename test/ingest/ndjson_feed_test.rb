@@ -34,6 +34,61 @@ class Rook::Ingest::NdjsonFeedTest < Minitest::Test
     end
   end
 
+  def test_stamping_replaces_a_preexisting_meta_source_and_keeps_other_meta_fields
+    # The feed descriptor is authoritative for provenance: a server-populated
+    # meta.source is overwritten, while the rest of meta survives.
+    exported = patient("p1").merge(
+      "meta" => { "source" => "https://fhir.example.test/r4",
+                 "versionId" => "3",
+                 "profile" => [ "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient" ] })
+    with_ndjson("Patient.ndjson" => [ exported ]) do |dir|
+      resource = Rook::Ingest::NdjsonFeed.directory(dir, source: PRIMARY).each_resource.first
+
+      assert_equal "urn:lakeraven:source:test-fhir", resource.dig("meta", "source")
+      assert_equal "3", resource.dig("meta", "versionId")
+      assert_equal [ "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient" ],
+        resource.dig("meta", "profile")
+    end
+  end
+
+  def test_malformed_ndjson_reports_file_and_line
+    with_ndjson({}) do |dir|
+      path = File.join(dir, "Patient.ndjson")
+      File.write(path, "#{JSON.generate(patient('p1'))}\n\n{not json\n")
+      feed = Rook::Ingest::NdjsonFeed.directory(dir, source: PRIMARY)
+
+      error = assert_raises(JSON::ParserError) { feed.each_resource.to_a }
+      assert_includes error.message, path
+      assert_includes error.message, "#{path}:3"
+    end
+  end
+
+  def test_directory_feed_raises_when_no_ndjson_files_present
+    Dir.mktmpdir do |dir|
+      error = assert_raises(ArgumentError) do
+        Rook::Ingest::NdjsonFeed.directory(File.join(dir, "typod-path"), source: PRIMARY)
+      end
+
+      assert_includes error.message, "typod-path"
+    end
+  end
+
+  def test_load_raises_on_id_collision_across_feeds
+    with_ndjson("Patient.ndjson" => [ patient("p1") ]) do |primary_dir|
+      with_ndjson("Patient.ndjson" => [ patient("p1") ]) do |suppl_dir|
+        error = assert_raises(Rook::Ingest::DuplicateResourceError) do
+          Rook::Ingest.load(
+            Rook::Ingest::NdjsonFeed.directory(primary_dir, source: PRIMARY),
+            Rook::Ingest::NdjsonFeed.directory(suppl_dir, source: SUPPLEMENTAL))
+        end
+
+        assert_includes error.message, "Patient/p1"
+        assert_includes error.message, "test-fhir"
+        assert_includes error.message, "test-suppl"
+      end
+    end
+  end
+
   def test_stamping_preserves_other_meta_fields
     profiled = patient("p1").merge(
       "meta" => { "profile" => [ "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient" ] })

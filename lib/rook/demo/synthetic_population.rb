@@ -44,12 +44,21 @@ module Rook
 
         # Most recent Observation whose code is in +loinc_codes+ (a single code
         # or a value-set expansion) and whose effective date falls within the
-        # (inclusive) period, or nil if none.
+        # (inclusive) period, or nil if none. An UNDATED observation (no
+        # effectiveDateTime) means "currently effective" — registration-derived
+        # supplemental attributes carry no date — so it is always in-period and
+        # sorts as newest, winning over any dated reading.
+        #
+        # NOTE: matching is on the bare code string, ignoring coding system —
+        # it relies on LOINC codes and the supplemental attribute codes being
+        # disjoint sets, a naming convention rather than a mechanism.
+        # System-aware matching arrives with the production reader.
         def latest_observation(loinc_codes, period)
           codes = Array(loinc_codes)
-          observations
-            .select { |o| codes.include?(o.loinc) && period.cover?(o.effective_date) }
-            .max_by(&:effective_date)
+          undated, dated = observations
+            .select { |o| codes.include?(o.loinc) && (o.effective_date.nil? || period.cover?(o.effective_date)) }
+            .partition { |o| o.effective_date.nil? }
+          undated.last || dated.max_by(&:effective_date)
         end
       end
 
@@ -57,8 +66,9 @@ module Rook
       # for clinical observations, or an internal attribute code for
       # supplemental-channel observations (whose coded value lands in +value+).
       # For blood pressure, +components+ maps a LOINC code to its numeric
-      # value (systolic 8480-6, diastolic 8462-4). +source_id+ is ingest
-      # provenance: which feed contributed this element.
+      # value (systolic 8480-6, diastolic 8462-4). +effective_date+ is nil for
+      # undated observations, meaning "currently effective". +source_id+ is
+      # ingest provenance: which feed contributed this element.
       Observation = Struct.new(:loinc, :value, :effective_date, :components, :source_id,
         keyword_init: true) do
         # Value of the first component whose code is in +loinc_codes+ (a single
@@ -141,7 +151,9 @@ module Rook
         Observation.new(
           loinc: codings(obs["code"]).first,
           value: obs.dig("valueQuantity", "value") || codings(obs["valueCodeableConcept"]).first,
-          effective_date: Date.parse(obs.fetch("effectiveDateTime")),
+          # Undated (no effectiveDateTime) = currently effective; see
+          # Patient#latest_observation.
+          effective_date: obs["effectiveDateTime"] && Date.parse(obs["effectiveDateTime"]),
           components: components,
           source_id: Rook::Ingest.source_id(obs)
         )
