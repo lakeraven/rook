@@ -3,6 +3,7 @@
 require "rook/version"
 require "rook/result"
 require "rook/ports"
+require "rook/ingest"
 require "rook/vfc_eligibility_enforcement_service"
 require "rook/reportable_condition_service"
 
