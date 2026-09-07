@@ -20,7 +20,7 @@ module Rook
         # GPRA-specific denominator here.
         class DiabetesPoorGlycemicControl < DiabetesHbA1cPoorControl
           def id
-            "gpra-diabetes-poor-glycemic-control"
+            "demo-gpra-diabetes-poor-glycemic-control"
           end
 
           def title

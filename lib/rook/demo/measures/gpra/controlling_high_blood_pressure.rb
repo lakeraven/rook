@@ -15,7 +15,7 @@ module Rook
         # the GPRA and UDS specs, so no denominator override is needed here.
         class ControllingHighBloodPressure < Measures::ControllingHighBloodPressure
           def id
-            "gpra-controlling-high-blood-pressure"
+            "demo-gpra-controlling-high-blood-pressure"
           end
 
           def title

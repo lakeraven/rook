@@ -24,7 +24,7 @@ Feature: Quality and grant reporting for a tribal clinic
   Scenario: A tribal-638 quality lead runs the GPRA report
     When I generate the GPRA quality report
     Then the report covers 35 patients
-    And the report is framed as "IHS CRS / GPRA National Clinical Measures"
+    And the report is framed as "IHS CRS / GPRA National Clinical Measures (demo preview)"
     And the "Depression Screening (PHQ, age 12+)" measure reports 28 of 35 at 80.0%
 
   # The report is not just a number — it is a worklist of who to reach out to.

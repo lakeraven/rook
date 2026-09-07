@@ -103,7 +103,7 @@ class Rook::Demo::EpicPopulationTest < Minitest::Test
     report = Rook::Demo::Report.gpra(population: @population,
       clinic_label: Rook::Demo::Report::EPIC_CLINIC_LABEL)
 
-    screening = result_for(report, "gpra-depression-screening")
+    screening = result_for(report, "demo-gpra-depression-screening")
     assert_equal 18, screening.denominator, "all patients are age 12+"
     assert_equal 12, screening.numerator
   end

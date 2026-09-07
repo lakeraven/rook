@@ -12,7 +12,7 @@ class Rook::Demo::GPRAReportTest < Minitest::Test
   end
 
   def test_gpra_report_uses_gpra_framework_and_three_measures
-    assert_equal "IHS CRS / GPRA National Clinical Measures", @report.framework
+    assert_equal "IHS CRS / GPRA National Clinical Measures (demo preview)", @report.framework
     assert_equal 3, @report.results.size
   end
 
@@ -21,7 +21,7 @@ class Rook::Demo::GPRAReportTest < Minitest::Test
   # ---------------------------------------------------------------------------
 
   def test_gpra_diabetes_matches_uds_computation
-    gpra = result_for("gpra-diabetes-poor-glycemic-control")
+    gpra = result_for("demo-gpra-diabetes-poor-glycemic-control")
     uds = uds_result_for("uds-6b-diabetes-hba1c-poor-control")
 
     assert_equal "Diabetes: Poor Glycemic Control (A1c > 9.0%)", gpra.measure.title
@@ -32,7 +32,7 @@ class Rook::Demo::GPRAReportTest < Minitest::Test
   end
 
   def test_gpra_blood_pressure_matches_uds_computation
-    gpra = result_for("gpra-controlling-high-blood-pressure")
+    gpra = result_for("demo-gpra-controlling-high-blood-pressure")
     uds = uds_result_for("uds-6b-controlling-high-blood-pressure")
 
     assert_equal [ uds.denominator, uds.numerator, uds.rate ], [ gpra.denominator, gpra.numerator, gpra.rate ]
@@ -46,7 +46,7 @@ class Rook::Demo::GPRAReportTest < Minitest::Test
   # ---------------------------------------------------------------------------
 
   def test_depression_screening_counts
-    result = result_for("gpra-depression-screening")
+    result = result_for("demo-gpra-depression-screening")
 
     assert_equal 35, result.denominator, "all synthetic patients are age 12+"
     assert_equal 28, result.numerator, "patients screened with a PHQ-9 in the period"
@@ -55,7 +55,7 @@ class Rook::Demo::GPRAReportTest < Minitest::Test
   end
 
   def test_depression_screening_care_gaps_are_unscreened_patients
-    result = result_for("gpra-depression-screening")
+    result = result_for("demo-gpra-depression-screening")
 
     assert_equal result.denominator - result.numerator, result.care_gaps.size
     assert(result.care_gaps.all? { |g| g.reason.include?("No depression screening recorded") })
@@ -68,7 +68,7 @@ class Rook::Demo::GPRAReportTest < Minitest::Test
   def test_text_renderer_shows_crs_gpra_summary
     text = Rook::Demo::GPRAReportRenderer.new(@report).to_text
 
-    assert_includes text, "IHS CRS / GPRA National Clinical Measures"
+    assert_includes text, "IHS CRS / GPRA National Clinical Measures (demo preview)"
     assert_includes text, "Measure summary"
     assert_includes text, "Depression Screening (PHQ, age 12+)"
     assert_includes text, "Care-gap worklist"
@@ -79,7 +79,7 @@ class Rook::Demo::GPRAReportTest < Minitest::Test
     html = Rook::Demo::GPRAReportRenderer.new(@report).to_html
 
     assert_includes html, "<!DOCTYPE html>"
-    assert_includes html, "IHS CRS / GPRA National Clinical Measures"
+    assert_includes html, "IHS CRS / GPRA National Clinical Measures (demo preview)"
     assert_includes html, "80.0%"
     refute_match(/example demo org|example consortium|broken rock/i, html)
   end
