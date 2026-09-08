@@ -23,9 +23,20 @@ CRS_DRIVER_PENDING =
   "report invocation are not yet implemented — pending environment work, " \
   "not a verified CRS result"
 
-Before do |scenario|
-  next unless ENV["DRIVER"] == "crs"
-  next unless scenario.location.file.include?("features/parity")
+PARITY_DRIVERS = %w[rook crs].freeze
+
+# Unknown DRIVER values must fail loudly at load time — DRIVER=CRS or a typo
+# silently running the rook driver would be Rook-vs-BDD wearing a CRS label.
+if ENV["DRIVER"] && !PARITY_DRIVERS.include?(ENV["DRIVER"].strip.downcase)
+  raise ArgumentError, "unknown DRIVER=#{ENV['DRIVER'].inspect}; use one of: #{PARITY_DRIVERS.join(', ')}"
+end
+
+def crs_driver? = ENV["DRIVER"].to_s.strip.downcase == "crs"
+
+# Scoped by the @crs-v25 tag — the same predicate the evidence lint locks on
+# every parity feature — not by a path substring.
+Before("@crs-v25") do |_scenario|
+  next unless crs_driver?
 
   unless ParityHarness::CrsTwin.configured?
     raise ParityHarness::CrsTwin::Unavailable,

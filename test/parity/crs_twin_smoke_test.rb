@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
 require "test_helper"
+require "date"
 require_relative "../../features/parity/support/crs_twin"
+require_relative "../../features/parity/support/fileman_seeder"
 
 # Environment gate for the #99 CRS driver: proves the parity oracle — a
 # license-free YottaDB RPMS twin with the pinned BGP build — is genuinely
@@ -35,6 +37,41 @@ class CrsTwinSmokeTest < Minitest::Test
 
     assert_equal "10 10 10 10", flags,
       "registration (^DPT/^AUPNPAT), visit (^AUPNVSIT), and CRS site (^BGPSITE) globals must exist"
+  end
+
+  def seeder
+    @seeder ||= ParityHarness::FilemanSeeder.new(twin)
+  end
+
+  def unique_id
+    "SMK#{Time.now.strftime('%H%M%S')}#{rand(100)}"
+  end
+
+  def test_fileman_seeding_round_trip
+    dfn = seeder.seed_patient(id: unique_id, sex: "F", dob: Date.new(1975, 7, 1))
+    visit = seeder.seed_visit(dfn: dfn, date: Date.new(2025, 6, 10))
+    seeder.seed_pov(visit_ien: visit, dfn: dfn, icd_code: "E11.9")
+
+    readback = seeder.show(dfn)
+
+    assert_match(/BEN=01/, readback, "beneficiary must read back through $$BEN^AUPNPAT")
+    assert_match(/VISITS=1/, readback, "visit must land on the patient's AC cross-reference")
+  end
+
+  # First live agreement check between the M oracle and a rule Rook::Crs
+  # encoded from it: the Problem List date rule (onset governs when present
+  # — PLTAXNDR^BGPXDU). The real routine runs against a seeded entry.
+  def test_micro_parity_problem_list_onset_governs
+    dfn = seeder.seed_patient(id: unique_id, sex: "M", dob: Date.new(1970, 7, 1))
+    seeder.seed_problem(dfn: dfn, icd_code: "E11.9", status: "A", onset: Date.new(2018, 6, 15))
+
+    in_2018 = seeder.problem_list_hit?(dfn: dfn, taxonomy: "SURVEILLANCE DIABETES",
+      from: Date.new(2018, 1, 1), to: Date.new(2018, 12, 31))
+    in_2025 = seeder.problem_list_hit?(dfn: dfn, taxonomy: "SURVEILLANCE DIABETES",
+      from: Date.new(2025, 1, 1), to: Date.new(2025, 12, 31))
+
+    assert in_2018, "onset 2018 must hit a 2018 window (onset governs)"
+    refute in_2025, "onset 2018 must MISS a 2025 window even though the entry was entered today — "                     "real BGP agrees with the onset-governs rule Rook::Crs encodes"
   end
 
   def test_bgp_taxonomies_are_loaded
