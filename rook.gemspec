@@ -14,7 +14,7 @@ Gem::Specification.new do |spec|
                      "(IHS/tribal/FQHC programs). FHIR R4 data input via NDJSON/Bulk Data ingest, " \
                      "FHIR MeasureReport output. A host application supplies persistence and HTTP; " \
                      "this gem is the engine-neutral core and boots with plain Ruby."
-  spec.license     = "MIT"
+  spec.license     = "Apache-2.0"
   spec.metadata    = {
     "homepage_uri"    => "https://github.com/lakeraven/rook",
     "source_code_uri" => "https://github.com/lakeraven/rook"
@@ -23,7 +23,7 @@ Gem::Specification.new do |spec|
   spec.required_ruby_version = ">= 3.4.0"
 
   spec.files = Dir.chdir(File.expand_path(__dir__)) do
-    Dir["lib/**/*", "MIT-LICENSE", "Rakefile", "README.md"]
+    Dir["lib/**/*", "LICENSE", "NOTICE", "Rakefile", "README.md"]
   end
 
   spec.add_dependency "fhir_models", "~> 4.3"
