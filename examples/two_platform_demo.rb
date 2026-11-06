@@ -3,15 +3,15 @@
 # DEMO / REFERENCE ASSET — NOT the production measure engine.
 #
 # The EHR-agnostic beat (rook#101): the SAME measure implementations computed
-# over two platform-flavored bulk exports — the first synthetic population
-# (RPMS-flavored feeds) and the Epic-shaped synthetic export — both loaded
-# through the same Rook::Ingest NDJSON seam, differing only in their
-# SourceDescriptors. Prints a side-by-side rate table, then writes the Epic
-# clinic's UDS and GPRA HTML reports.
+# over platform-flavored bulk exports — the first synthetic population
+# (RPMS-flavored feeds), the Epic-shaped export, and the Greenway-shaped
+# export — all loaded through the same Rook::Ingest NDJSON seam, differing
+# only in their SourceDescriptors. Prints a side-by-side rate table, then
+# writes the Epic and Greenway clinics' UDS and GPRA HTML reports.
 #
 # Usage:
-#   ruby -Ilib examples/two_platform_demo.rb           # writes tmp/epic_*.html
-#   ruby -Ilib examples/two_platform_demo.rb outdir    # writes outdir/epic_*.html
+#   ruby -Ilib examples/two_platform_demo.rb           # writes tmp/{epic,greenway}_*.html
+#   ruby -Ilib examples/two_platform_demo.rb outdir    # writes outdir/{epic,greenway}_*.html
 #
 # Synthetic data only; no vendor API involvement, no real PHI.
 
@@ -20,10 +20,11 @@ require "rook/demo"
 
 populations = {
   "RPMS-flavored clinic" => Rook::Demo::SyntheticPopulation.default,
-  "Epic-flavored clinic" => Rook::Demo::SyntheticPopulation.epic
+  "Epic-flavored clinic" => Rook::Demo::SyntheticPopulation.epic,
+  "Greenway-flavored clinic" => Rook::Demo::SyntheticPopulation.greenway
 }
 
-puts "Same measures, two platform exports, one ingest seam"
+puts "Same measures, three platform exports, one ingest seam"
 puts "=" * 72
 
 reports = populations.transform_values do |population|
@@ -43,21 +44,23 @@ measure_titles.each_with_index do |title, index|
 end
 
 puts "\n(Same Rook::Demo measure classes; the populations load through the"
-puts " same Rook::Ingest seam under :rpms and :epic source descriptors.)"
+puts " same Rook::Ingest seam under :rpms, :epic and :greenway source descriptors.)"
 
 out_dir = ARGV[0] || File.expand_path("../tmp", __dir__)
 FileUtils.mkdir_p(out_dir)
 
-epic_population = populations.fetch("Epic-flavored clinic")
 {
-  "epic_uds_report.html" => Rook::Demo::ReportRenderer.new(
-    Rook::Demo::Report.uds(population: epic_population,
-      clinic_label: Rook::Demo::Report::EPIC_CLINIC_LABEL)),
-  "epic_gpra_report.html" => Rook::Demo::GPRAReportRenderer.new(
-    Rook::Demo::Report.gpra(population: epic_population,
-      clinic_label: Rook::Demo::Report::EPIC_CLINIC_LABEL))
-}.each do |filename, renderer|
-  path = File.join(out_dir, filename)
-  File.write(path, renderer.to_html)
-  puts "Wrote #{path}"
+  "epic" => [ populations.fetch("Epic-flavored clinic"), Rook::Demo::Report::EPIC_CLINIC_LABEL ],
+  "greenway" => [ populations.fetch("Greenway-flavored clinic"), Rook::Demo::Report::GREENWAY_CLINIC_LABEL ]
+}.each do |prefix, (population, clinic_label)|
+  {
+    "#{prefix}_uds_report.html" => Rook::Demo::ReportRenderer.new(
+      Rook::Demo::Report.uds(population: population, clinic_label: clinic_label)),
+    "#{prefix}_gpra_report.html" => Rook::Demo::GPRAReportRenderer.new(
+      Rook::Demo::Report.gpra(population: population, clinic_label: clinic_label))
+  }.each do |filename, renderer|
+    path = File.join(out_dir, filename)
+    File.write(path, renderer.to_html)
+    puts "Wrote #{path}"
+  end
 end
