@@ -34,6 +34,11 @@ module Rook
       EPIC_SUPPLEMENTAL_SOURCE = Rook::SourceDescriptor.new(
         id: "demo-epic-supplemental", platform: :epic, channel: :supplemental)
 
+      GREENWAY_PRIMARY_SOURCE = Rook::SourceDescriptor.new(
+        id: "demo-greenway-fhir", platform: :greenway, channel: :primary_fhir)
+      GREENWAY_SUPPLEMENTAL_SOURCE = Rook::SourceDescriptor.new(
+        id: "demo-greenway-supplemental", platform: :greenway, channel: :supplemental)
+
       # A single synthetic patient with its linked Conditions, Observations,
       # and Coverages.
       Patient = Struct.new(:id, :family_name, :given_name, :gender, :birth_date,
@@ -159,6 +164,19 @@ module Rook
             source: EPIC_PRIMARY_SOURCE),
           Rook::Ingest::NdjsonFeed.directory(File.join(FIXTURES_DIR, "epic", "supplemental"),
             source: EPIC_SUPPLEMENTAL_SOURCE)
+        )
+      end
+
+      # The third committed population: an ambulatory Greenway-flavored export
+      # (see examples/generate_greenway_population.rb) — GUID ids, ICD-10-first
+      # encounter diagnoses, offset timestamps — through the same seam under a
+      # +:greenway+ source descriptor.
+      def self.greenway
+        ingest(
+          Rook::Ingest::NdjsonFeed.directory(File.join(FIXTURES_DIR, "greenway", "primary_fhir"),
+            source: GREENWAY_PRIMARY_SOURCE),
+          Rook::Ingest::NdjsonFeed.directory(File.join(FIXTURES_DIR, "greenway", "supplemental"),
+            source: GREENWAY_SUPPLEMENTAL_SOURCE)
         )
       end
 

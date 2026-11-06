@@ -26,9 +26,10 @@ module Rook
       DEFAULT_PERIOD = ReportingPeriod.new(Date.new(2025, 1, 1), Date.new(2025, 12, 31))
 
       # Generic, non-identifying labels. NO real clinic/tribe/partner names —
-      # "Epic" names the EHR platform flavor of the synthetic export only.
+      # "Epic"/"Greenway" name the EHR platform flavor of the synthetic export only.
       CLINIC_LABEL = "a tribal clinic (synthetic demo data)"
       EPIC_CLINIC_LABEL = "a tribal clinic on Epic (synthetic demo data)"
+      GREENWAY_CLINIC_LABEL = "a community health center on Greenway (synthetic demo data)"
 
       def self.uds(population: SyntheticPopulation.default, clinic_label: CLINIC_LABEL)
         new(population: population,
