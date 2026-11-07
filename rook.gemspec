@@ -20,7 +20,7 @@ Gem::Specification.new do |spec|
     "source_code_uri" => "https://github.com/lakeraven/rook"
   }
 
-  spec.required_ruby_version = ">= 3.4.0"
+  spec.required_ruby_version = ">= 4.0.0"
 
   spec.files = Dir.chdir(File.expand_path(__dir__)) do
     Dir["lib/**/*", "MIT-LICENSE", "Rakefile", "README.md"]
