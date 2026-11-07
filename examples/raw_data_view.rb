@@ -16,7 +16,7 @@
 # Reads the committed NDJSON fixtures directly (the bytes the ingest seam
 # reads); synthetic data only, no real PHI.
 
-require "cgi"
+require "cgi/escape"
 require "fileutils"
 require "json"
 require "rook/demo"
