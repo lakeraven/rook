@@ -1,0 +1,277 @@
+[EVIDENCE EXTRACT — do not edit by hand]
+Source: GPRAMeasuresV250.pdf (CRS 2025 v25.0 National GPRA/GPRAMA Report — Performance Measure List and Definitions, IHS, November 2024; public document, ihs.gov)
+Source sha256: 0026f6e99a1872f7f5e28c7b356ca69a1ab6252c328555537df50302feeca429
+Extraction: pdftotext GPRAMeasuresV250.pdf - | sed -n '1948,2218p'
+Section: 2.2 Dental Group (2.2.1 Access to Dental Services; 2.2.2 Dental Sealants; 2.2.3 Topical Fluoride)
+
+Dental Group
+
+2.2.1
+
+Access to Dental Services
+
+2.2.1.1
+
+Owner and Contact
+Dental Program: Nathan P. Mork, DDS, MPH; Timothy L. Lozon, DDS; Joel C.
+Knutson, DDS
+
+2.2.1.2
+
+National Reporting
+NATIONAL (included in IHS Performance Report; reported to OMB and Congress)
+
+2.2.1.3
+
+Denominators
+1. GPRA: User Population patients broken down by age groups (in years): 0 through
+2, 3 through 5, 0 through 5, 6 through 9, 10 through 12, 13 through 15, 16 through
+21, 22 through 34, 35 through 44, 45 through 54, 55 through 74, and 75 and older.
+
+National GPRA/GPRAMA Report
+Performance Measure List and Definitions
+November 2024
+
+Performance Measure Topics and Definitions
+
+27
+
+IHS Clinical Reporting System
+
+2.2.1.4
+
+Version 25.0
+
+Numerators
+1. GPRA: Patients with documented dental visit during the Report Period.
+Note: This numerator does not include refusals.
+
+2.2.1.5
+
+Definitions
+Documented Dental Visit
+• IHS Dental Tracking code 0000 or 0190
+
+2.2.1.6
+
+•
+
+RPMS Dental/ADA CDT codes 0110 through 0390, 0415 through 0471, 0601
+through 0603, 0999 through 9974, 9995, 9996, 9999, D0120 through D0389,
+D0415 through D0470, D0701 through D0804, D0999 through D9974,
+D9995, D9996, D9999
+
+•
+
+CPT code D0110 through D0390, D0415 through D9952, D9970 through
+D9974, D9995, D9996, D9999 [BGP DENTAL VISIT CPT CODES]
+
+•
+
+Exam code 30
+
+•
+
+POV ICD-10: Z01.20, Z01.21, Z13.84, Z29.3 [BGP DENTAL VISIT DXS]
+
+GPRA 2025 Target
+During GPRA Year 2025, achieve the target rate of 27.0% for the proportion of
+patients who receive dental services.
+
+2.2.1.7
+
+Patient Lists
+•
+
+List of patients with documented dental visit.
+
+•
+
+List of patients without documented dental visit.
+
+2.2.2
+
+Dental Sealants
+
+2.2.2.1
+
+Owner and Contact
+Dental Program: Nathan P. Mork, DDS, MPH; Timothy L. Lozon, DDS; Joel C.
+Knutson, DDS
+
+2.2.2.2
+
+National Reporting
+NATIONAL (included in IHS Performance Report; reported to OMB and Congress)
+
+National GPRA/GPRAMA Report
+Performance Measure List and Definitions
+November 2024
+
+Performance Measure Topics and Definitions
+
+28
+
+IHS Clinical Reporting System
+
+2.2.2.3
+
+Version 25.0
+
+Denominators
+1. GPRA: User Population patients ages 2 through 15 years. Broken down by age
+groups 2, 3 through 5, 6 through 9, 10 through 12, and 13 through 15.
+
+2.2.2.4
+
+Numerators
+1. GPRA: Patients with at least one or more intact dental sealants.
+2. Count only (no percentage comparison to denominator). For patients meeting the
+User Population definition, the total number of dental sealants during the Report
+Period. Broken down by age group 2 through 15 years.
+Note: This numerator does not include refusals.
+
+2.2.2.5
+
+Definitions
+Intact Dental Sealant
+• Any of the following documented during the Report Period:
+
+•
+
+− RPMS Dental/ADA codes 1351, 1352, 1353, D1351, D1352, D1353
+− CPT D1351, D1352, D1353
+Or any of the following documented during the past three years from the end of
+the Report Period:
+− IHS Dental Tracking code 0007
+If both RPMS Dental/ADA CDT and CPT codes are found on the same visit, only
+the RPMS Dental/ADA CDT code will be counted. IHS Dental Tracking code
+0007 will be counted regardless of whether another sealant code is submitted on
+the same visit or date of service.
+For the count measure, only two sealants per tooth and only one repair (RPMS
+Dental/ADA CDT code 1353, D1353 or CPT D1353) per tooth will be counted
+during the Report Period. Each tooth is identified by the data element Operative
+Site in RPMS.
+
+2.2.2.6
+
+GPRA 2025 Target
+During GPRA Year 2025, achieve the target rate of 11.8% for the proportion of
+patients with at least one or more intact dental sealants.
+
+2.2.2.7
+
+Patient Lists
+•
+
+List of User Pop patients ages 2 through 15 years with intact dental sealant.
+
+•
+
+List of User Pop patients ages 2 through 15 without intact dental sealant.
+
+National GPRA/GPRAMA Report
+Performance Measure List and Definitions
+November 2024
+
+Performance Measure Topics and Definitions
+
+29
+
+IHS Clinical Reporting System
+
+•
+
+Version 25.0
+
+Patients who received dental sealants during Report Period.
+
+2.2.3
+
+Topical Fluoride
+
+2.2.3.1
+
+Owner and Contact
+Dental Program: MPH; Nathan P. Mork, DDS, MPH; Timothy L. Lozon, DDS; Joel
+C. Knutson, DDS
+
+2.2.3.2
+
+National Reporting
+NATIONAL (included in IHS Performance Report; reported to OMB and Congress)
+
+2.2.3.3
+
+Denominators
+1. GPRA: User Population patients ages 1 through 15. Broken down by age groups 1
+through 2, 3 through 5, 6 through 9, 10 through 12, and 13 through 15.
+
+2.2.3.4
+
+Numerators
+1. GPRA: Patients who received one or more topical fluoride applications during the
+Report Period.
+2. Count only (no percentage comparison to denominator). For patients meeting the
+User Population definition, the total number of patients with at least one topical
+fluoride treatment during the Report Period. Broken down by age group 1 through
+15.
+Note: This numerator does not include refusals.
+
+2.2.3.5
+
+Definitions
+Topical Fluoride Application
+Defined as any of the following:
+•
+
+RPMS Dental/ADA CDT codes 1201 (old code), 1203 (old code), 1204 (old
+code), 1205 (old code), 1206, 1208, 5986, D1206, D1208, D1354, D5986
+
+•
+
+CPT D1201 (old code), D1203 (old code), D1204 (old code), D1205 (old
+code), D1206, D1208, D5986, 99188, 0792T [BGP CPT TOPICAL
+FLUORIDE]
+
+•
+
+POV ICD-10: Z29.3 [BGP TOPICAL FLUORIDE DXS]
+
+For the count measure, a maximum of one application per patient per visit is
+allowed.
+National GPRA/GPRAMA Report
+Performance Measure List and Definitions
+November 2024
+
+Performance Measure Topics and Definitions
+
+30
+
+IHS Clinical Reporting System
+
+2.2.3.6
+
+Version 25.0
+
+GPRA 2025 Target
+During GPRA Year 2025, achieve the target rate of 27.4% for the proportion of
+patients who receive at least one topical fluoride application.
+
+2.2.3.7
+
+Patient Lists
+•
+
+List of User Pop patients ages 1 through 15 years with topical fluoride
+application.
+
+•
+
+List of User Pop patients ages 1 through 15 without topical fluoride application.
+
+•
+
+Patients who received at least one topical fluoride application during Report
+Period.
+

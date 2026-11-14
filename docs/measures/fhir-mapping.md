@@ -26,6 +26,10 @@ CRS-relevant information shows up as a parity break. Entries marked
 | PHQ-9 / PHQ-T / EPDS (V MEASUREMENT) | `Observation` — survey; LOINC `44261-6` (PHQ-9 total) or system `https://terminology.lakeraven.com/CodeSystem/rpms-measurement-type` code `PHQ9`/`PHQT`/`EPDS` *(provisional)*, `valueQuantity`, `effectiveDateTime` |
 | Exam (V EXAM / BH exam 36) | `Observation` — system `https://terminology.lakeraven.com/CodeSystem/bh-exam` code `36`, `valueCodeableConcept` from `…/CodeSystem/bh-exam-result` (`P`/`N`/`R`), `effectiveDateTime` *(provisional)* |
 | BHS problem code (e.g. 14.1) | `Observation` — system `https://terminology.lakeraven.com/CodeSystem/bhs-problem-code` code `14.1`, `effectiveDateTime` *(provisional)* |
+| Dental procedure (V DENTAL) | `Procedure` — `code.coding` system `https://terminology.lakeraven.com/CodeSystem/rpms-dental-ada`, code = the RPMS Dental/ADA code as stored (IHS Dental Tracking codes such as `0000`/`0190`/`0007`, pre-CDT numeric codes such as `1351`, and CDT `D`-codes), `performedDateTime` = visit date, `encounter` reference (the chart-review/telephone rule needs the visit), optional `bodySite` = operative site *(provisional)* |
+| CPT on a V TRANSACTION | Same `Procedure` shape as V CPT |
+| Exam (PCC V EXAM, e.g. 30 dental exam) | `Observation` — system `https://terminology.lakeraven.com/CodeSystem/pcc-exam` code `30`, `effectiveDateTime` *(provisional)* |
+| Service category C (chart review) / T (telephone) | `Encounter.class` system `https://terminology.lakeraven.com/CodeSystem/ihs-service-category`, code `C` / `T` — no v3-ActCode equivalent; never qualifies for User Population *(provisional)* |
 | Currently-pregnant (Reproductive Factors) | `Observation` — LOINC `82810-3` (pregnancy status), `valueCodeableConcept` SNOMED `77386006` (pregnant), `effectiveDateTime` in period |
 
 **Known contract gaps (loud — from review, tracked for the adapter design):**

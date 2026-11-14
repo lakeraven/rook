@@ -15,11 +15,17 @@
       "BGPXD25.m": "ac2f4ad940fa8db939f9519df69f87ec034df3dcc220c974b8c998997cd0dfeb",
       "BGPXD27.m": "3e14bdc355783e73dfdbc3f2e25151c68b28d81a04a14a314a04468eb0fe5ff7",
       "BGPXPC11.m": "673e2233bcdebabd44c9d276411799a063f8c9faffb7cc108eb19e80e99f3261",
-      "BGPXDU.m": "969c32d574b9f59330e19b4b8ff65c577198b5a2690df3fce54373cea672e023"
+      "BGPXDU.m": "969c32d574b9f59330e19b4b8ff65c577198b5a2690df3fce54373cea672e023",
+      "BGPXD1.m": "061d74ba731c0e2cae165d78d73b0c7d66958847935cdf08df694dace4c44523",
+      "BGPXD21.m": "fe5d63e096450cac45eda5af30f753b48e697c60a6940adc821babf62610f95c",
+      "BGPXD211.m": "4e94959541e92d64577f60d8b06278a13465aec984fc4eac137b8cc2be69586c",
+      "BGPXD3.m": "a28fbd0c5c97c55312a1e55e31002019b704d4075aff42296ae904909f5a0e30",
+      "BGPXD3A.m": "c0a02a34b5661f0ed550da2e64a9c1b17d5208d5ba197f6018808d5e2c649871"
     }
   },
   "extracts": {
     "controlling-high-blood-pressure.txt": "2ca7697575bd41dee09b201c3c7fcb8bf0c19f98bc2e3691079b59c414fa653e",
+    "dental.txt": "fc13bafbc7f3817865f98c3c3dbb44a276beb5c16921d4749559b3390a01667a",
     "depression-screening.txt": "230ea3b49c2987d78b297dedcc46874cc302b9e33de1ba401189948839154a1f",
     "diabetes-glycemic-control.txt": "2c2189f3ee57310d09399e2020b3c4db216a8082a7a70c62beba8b4fe4b81ab2",
     "populations.txt": "bcdaf831480d963319bf1c41e36ccc9477e5c4337be07e95f2d1be03364181e5"
