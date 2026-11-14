@@ -148,6 +148,82 @@ module Rook
           "No depression screening or mood disorder diagnosis in the measurement period"
         end
       end
+
+      # GPRA: Access to Dental Services (§2.2.1; dossier dental.md). User
+      # Population, all ages; numerator = documented dental visit during the
+      # period (DENTSRVD^BGPXD211).
+      class DentalAccess < MeasureDefinition
+        def id = "crs-v25-dental-access"
+        def title = "Access to Dental Services"
+        def interpretation = "Higher is better. Numerator = documented dental visit in the period."
+
+        def in_denominator?(patient, period)
+          patient.user_population?(period)
+        end
+
+        def in_numerator?(patient, period)
+          patient.dental_visit_documented?(period)
+        end
+
+        def care_gap?(patient, period)
+          !in_numerator?(patient, period)
+        end
+
+        def gap_reason(_patient, _period)
+          "No documented dental visit in the measurement period"
+        end
+      end
+
+      # GPRA: Dental Sealants (§2.2.2; dossier dental.md). User Population
+      # aged 2–15 at period start (I10^BGPXD3, BGPD7); numerator = intact
+      # sealant (BGPN7). INTERIM (loud): the User Population gate follows the
+      # spec; I10 itself tests age only (dental.md, open question 1).
+      class DentalSealants < MeasureDefinition
+        def id = "crs-v25-dental-sealants"
+        def title = "Dental Sealants"
+        def interpretation = "Higher is better. Numerator = at least one intact dental sealant."
+
+        def in_denominator?(patient, period)
+          patient.user_population?(period) && (2..15).cover?(patient.age_at_period_start(period))
+        end
+
+        def in_numerator?(patient, period)
+          patient.intact_sealant?(period)
+        end
+
+        def care_gap?(patient, period)
+          !in_numerator?(patient, period)
+        end
+
+        def gap_reason(_patient, _period)
+          "No intact dental sealant documented"
+        end
+      end
+
+      # GPRA: Topical Fluoride (§2.2.3; dossier dental.md). User Population
+      # aged 1–15 at period start (I11^BGPXD3, BGPD2); numerator = one or more
+      # topical fluoride applications during the period (BGPN3).
+      class TopicalFluoride < MeasureDefinition
+        def id = "crs-v25-topical-fluoride"
+        def title = "Topical Fluoride"
+        def interpretation = "Higher is better. Numerator = one or more topical fluoride applications in the period."
+
+        def in_denominator?(patient, period)
+          patient.user_population?(period) && (1..15).cover?(patient.age_at_period_start(period))
+        end
+
+        def in_numerator?(patient, period)
+          patient.topical_fluoride?(period)
+        end
+
+        def care_gap?(patient, period)
+          !in_numerator?(patient, period)
+        end
+
+        def gap_reason(_patient, _period)
+          "No topical fluoride application in the measurement period"
+        end
+      end
     end
   end
 end

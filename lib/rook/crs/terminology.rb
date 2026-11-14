@@ -22,6 +22,9 @@ module Rook
       BH_EXAM_SYSTEM = "https://terminology.lakeraven.com/CodeSystem/bh-exam"
       BH_EXAM_RESULT_SYSTEM = "https://terminology.lakeraven.com/CodeSystem/bh-exam-result"
       BHS_PROBLEM_SYSTEM = "https://terminology.lakeraven.com/CodeSystem/bhs-problem-code"
+      RPMS_DENTAL_SYSTEM = "https://terminology.lakeraven.com/CodeSystem/rpms-dental-ada"
+      PCC_EXAM_SYSTEM = "https://terminology.lakeraven.com/CodeSystem/pcc-exam"
+      SERVICE_CATEGORY_SYSTEM = "https://terminology.lakeraven.com/CodeSystem/ihs-service-category"
 
       # [SURVEILLANCE DIABETES]: ICD-10 E10.* through E13.* (§2.1.2.5).
       DIABETES_ICD10_PREFIXES = %w[E10 E11 E12 E13].freeze
@@ -63,7 +66,63 @@ module Rook
       PHQ9_LOINC = "44261-6"
       DEPRESSION_MEASUREMENT_TYPES = %w[PHQ9 PHQT EPDS].freeze
 
+      # -- Dental group (§2.2; dossier dental.md) ------------------------------
+
+      # IHS Dental Tracking codes that document a dental visit
+      # (DENTSRVD^BGPXD211: LAST ADA 0000, LAST ADA 0190).
+      DENTAL_VISIT_TRACKING = %w[0000 0190].freeze
+
+      # PCC exam code 30, dental exam (DENTSRVD^BGPXD211: LAST EXAM 30).
+      DENTAL_EXAM_CODE = "30"
+
+      # [BGP DENTAL VISIT DXS] (§2.2.1.5).
+      DENTAL_VISIT_ICD10 = %w[Z01.20 Z01.21 Z13.84 Z29.3].freeze
+
+      # Sealants (§2.2.2.5; SEAL/SEALR^BGPXD3A).
+      SEALANT_DENTAL = %w[1351 1352 1353 D1351 D1352 D1353].freeze
+      SEALANT_CPTS = %w[D1351 D1352 D1353].freeze
+      SEALANT_TRACKING = "0007" # SEALDEV^BGPXD3A, past three years
+
+      # Topical fluoride: [BGP TOPICAL FLUORIDE ADA CODES] per the spec, plus
+      # the values TF^BGPXD3A hard-codes beside the taxonomy (D1201-D1205 and
+      # the bare 1354) — the engine accepts the union (dental.md).
+      TOPICAL_FLUORIDE_DENTAL = %w[
+        1201 1203 1204 1205 1206 1208 1354 5986
+        D1201 D1203 D1204 D1205 D1206 D1208 D1354 D5986
+      ].freeze
+      # [BGP CPT TOPICAL FLUORIDE] (§2.2.3.5).
+      TOPICAL_FLUORIDE_CPTS = %w[D1201 D1203 D1204 D1205 D1206 D1208 D5986 99188 0792T].freeze
+      # [BGP TOPICAL FLUORIDE DXS] (§2.2.3.5).
+      TOPICAL_FLUORIDE_ICD10 = %w[Z29.3].freeze
+
       module_function
+
+      # [BGP DENTAL VISIT CPT CODES] (§2.2.1.5): D0110-D0390, D0415-D9952,
+      # D9970-D9974, D9995, D9996, D9999.
+      def dental_visit_cpt?(system, code)
+        return false unless system == CPT && (m = code.to_s.match(/\AD(\d{4})\z/))
+
+        n = m[1].to_i
+        (110..390).cover?(n) || (415..9952).cover?(n) || (9970..9974).cover?(n) ||
+          [ 9995, 9996, 9999 ].include?(n)
+      end
+
+      # DVADA^BGPXD211 (M-verified): which RPMS Dental/ADA codes document a
+      # dental visit through the "ALL ADA" arm. Numeric (pre-CDT) codes and
+      # D-codes have separate ranges; anything else does not qualify.
+      def dental_visit_ada?(code)
+        code = code.to_s
+        if code.match?(/\A\d+\z/)
+          n = code.to_i
+          return (110..390).cover?(n) || (415..471).cover?(n) || (601..603).cover?(n) ||
+                 (999..9974).cover?(n) || [ 9995, 9996, 9999 ].include?(n)
+        end
+        return false unless (m = code.match(/\AD(\d{4})\z/))
+
+        n = m[1].to_i
+        (120..389).cover?(n) || (415..470).cover?(n) || (701..804).cover?(n) ||
+          (999..9974).cover?(n) || [ 9995, 9996, 9999 ].include?(n)
+      end
 
       def diabetes_code?(system, code)
         system == ICD10 && DIABETES_ICD10_PREFIXES.any? { |p| code.to_s.start_with?(p) }

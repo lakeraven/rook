@@ -24,7 +24,10 @@ module Rook
         },
         "Depression Screening 18+" => -> {
           Measures::DepressionScreening.new(age_range: 18.., stratum_label: "18+")
-        }
+        },
+        "Access to Dental Services" => -> { Measures::DentalAccess.new },
+        "Dental Sealants" => -> { Measures::DentalSealants.new },
+        "Topical Fluoride" => -> { Measures::TopicalFluoride.new }
       }.freeze
 
       def initialize(resources:, period:)
