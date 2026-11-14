@@ -20,6 +20,11 @@ new explicit step, never a looser parse.
   Population requires one visit in 3 years; Active Clinical requires two
   face-to-face medical-clinic visits, one core — seed only what's stated).
 
+**`a User Population patient "X" aged N at period start`** — the User
+Population macro above, but born exactly `period_start − N years − 183 days`:
+age N on the first day of the period and N + 1 by its last. For measures CRS
+ages at period start (the dental group, `BGPAGEB`).
+
 **`a qualifying GPRA diabetic patient "X"`** ≡ User Population patient aged 50
 (above) + diabetes POV (below) first recorded `2018-06-15` + diabetes Problem
 List entry (status Active, entered `2018-06-15`) + 2 ambulatory visits (service
@@ -64,6 +69,12 @@ facts; not pregnant.
 | `has a BH depression screening exam recorded <date> with result "<r>"` | BHS record, exam code 36, result `<r>` (`^AMHREC` result field), dated `<date>` |
 | `has no depression screening during the report period` | Absence — seed nothing |
 | `has no hypertension Problem List entry` | Absence — seed nothing |
+| `has RPMS dental code "<code>" recorded <date>` | V DENTAL, RPMS Dental/ADA code `<code>` as stored, on an ambulatory visit (svc cat A, **clinic 56** dental) dated `<date>`; the Procedure carries the visit link |
+| `has RPMS dental code "<code>" recorded <date> on a chart review` | Same V DENTAL fact on a visit with service category **C** (chart review), clinic 56 |
+| `has a dental exam recorded <date>` | V EXAM, exam code **30** (dental exam), dated `<date>` |
+| `has a dental visit POV recorded <date>` | V POV ICD-10 **Z01.20**, ambulatory visit dated `<date>` |
+| `has a topical fluoride POV recorded <date>` | V POV ICD-10 **Z29.3**, ambulatory visit dated `<date>` |
+| `has no dental services during the report period` | Absence — seed nothing |
 
 ## Membership labels (Then side)
 
@@ -77,4 +88,7 @@ facts; not pregnant.
 - `Depression Screening 12-17` / `Depression Screening 18+` — the two GPRA
   (denominator, numerator) strata of §2.5.4 (one numerator definition applied
   per denominator; the suffix names the stratum, not a separate spec numerator)
+- `Access to Dental Services` — GPRA denominator / numerator of §2.2.1
+- `Dental Sealants` — GPRA denominator / numerator of §2.2.2 (intact sealant)
+- `Topical Fluoride` — GPRA denominator / numerator of §2.2.3
 - `diabetic patients without a documented A1c` — patient list (§2.1.2.7)

@@ -33,11 +33,11 @@ module ParityDriver
 
   # -- Canonical builders (VOCABULARY.md / fhir-mapping.md) -------------------
 
-  def build_patient(name, age, sex, beneficiary: "01", community: true)
+  def build_patient(name, age, sex, beneficiary: "01", community: true, anchor: period_end)
     resources << {
       "resourceType" => "Patient", "id" => name,
       "gender" => sex,
-      "birthDate" => ((period_end << (12 * age)) - 183).iso8601,
+      "birthDate" => ((anchor << (12 * age)) - 183).iso8601,
       "extension" => [
         { "url" => T::IHS_BENEFICIARY_EXT, "valueCode" => beneficiary },
         { "url" => T::GPRA_COMMUNITY_EXT, "valueBoolean" => community }
@@ -46,10 +46,11 @@ module ParityDriver
     add_visit(name, period_start << 6)
   end
 
-  def add_visit(patient, date, encounter_id: "enc-#{next_id}", encounter_class: "AMB", clinic: "01")
+  def add_visit(patient, date, encounter_id: "enc-#{next_id}", encounter_class: "AMB", clinic: "01",
+                class_system: "http://terminology.hl7.org/CodeSystem/v3-ActCode")
     resources << {
       "resourceType" => "Encounter", "id" => encounter_id, "status" => "finished",
-      "class" => { "system" => "http://terminology.hl7.org/CodeSystem/v3-ActCode", "code" => encounter_class },
+      "class" => { "system" => class_system, "code" => encounter_class },
       "type" => [ { "coding" => [ { "system" => T::CLINIC_CODE_SYSTEM, "code" => clinic } ] } ],
       "subject" => { "reference" => "Patient/#{patient}" },
       "period" => { "start" => date.iso8601 }
@@ -80,6 +81,21 @@ module ParityDriver
     }
     entry["onsetDateTime"] = onset.iso8601 if onset
     resources << entry
+  end
+
+  # V DENTAL on a dental-clinic visit (VOCABULARY.md): the Procedure carries
+  # the visit link the chart-review / telephone rule reads.
+  def add_dental_code(patient, code, date, encounter_class: "AMB",
+                      class_system: "http://terminology.hl7.org/CodeSystem/v3-ActCode")
+    encounter_id = add_visit(patient, date, encounter_class: encounter_class, clinic: "56",
+                             class_system: class_system)
+    resources << {
+      "resourceType" => "Procedure", "id" => "proc-#{next_id}", "status" => "completed",
+      "code" => { "coding" => [ { "system" => T::RPMS_DENTAL_SYSTEM, "code" => code } ] },
+      "subject" => { "reference" => "Patient/#{patient}" },
+      "encounter" => { "reference" => "Encounter/#{encounter_id}" },
+      "performedDateTime" => date.iso8601
+    }
   end
 
   def add_observation(patient, extra)
@@ -137,6 +153,12 @@ end
 
 Given(/^a (?:(female|male) )?User Population patient "([^"]*)" aged (\d+) at period end$/) do |sex, patient, age|
   build_patient(patient, age.to_i, sex || "female")
+end
+
+Given(/^a User Population patient "([^"]*)" aged (\d+) at period start$/) do |patient, age|
+  # Born period_start − N years − 183 days: age N on the first day, N + 1 by
+  # the last (the dental measures age at period start — dental.md).
+  build_patient(patient, age.to_i, "female", anchor: period_start)
 end
 
 Given(/^a qualifying GPRA (diabetic|hypertensive) patient "([^"]*)"$/) do |kind, patient|
@@ -209,6 +231,34 @@ end
 
 Given(/^"([^"]*)" has a depression screening POV recorded (#{DATE})$/) do |patient, date|
   add_pov(patient, T::ICD10, "Z13.31", Date.parse(date))
+end
+
+# -- Dental facts (V DENTAL, PCC V EXAM) --------------------------------------
+
+Given(/^"([^"]*)" has RPMS dental code "([^"]*)" recorded (#{DATE})$/) do |patient, code, date|
+  add_dental_code(patient, code, Date.parse(date))
+end
+
+Given(/^"([^"]*)" has RPMS dental code "([^"]*)" recorded (#{DATE}) on a chart review$/) do |patient, code, date|
+  add_dental_code(patient, code, Date.parse(date), encounter_class: "C", class_system: T::SERVICE_CATEGORY_SYSTEM)
+end
+
+Given(/^"([^"]*)" has a dental exam recorded (#{DATE})$/) do |patient, date|
+  add_observation(patient,
+    "code" => { "coding" => [ { "system" => T::PCC_EXAM_SYSTEM, "code" => "30" } ] },
+    "effectiveDateTime" => date)
+end
+
+Given(/^"([^"]*)" has a dental visit POV recorded (#{DATE})$/) do |patient, date|
+  add_pov(patient, T::ICD10, "Z01.20", Date.parse(date))
+end
+
+Given(/^"([^"]*)" has a topical fluoride POV recorded (#{DATE})$/) do |patient, date|
+  add_pov(patient, T::ICD10, "Z29.3", Date.parse(date))
+end
+
+Given(/^"([^"]*)" has no dental services during the report period$/) do |_patient|
+  # Absence — seed nothing.
 end
 
 # -- Labs, CPT evidence, measurements -----------------------------------------

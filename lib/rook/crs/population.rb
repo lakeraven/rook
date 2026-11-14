@@ -266,7 +266,96 @@ module Rook
             .uniq.size
       end
 
+      # -- Dental group (§2.2; dossier dental.md) -----------------------------
+
+      # CRS ages the dental measures on the FIRST day of the Report Period
+      # (BGPAGEB=$$AGE^AUPNPAT(DFN,BGPBDATE), BGPXD1; I9^BGPXD21).
+      def age_at_period_start(period)
+        age_on(period.start_date)
+      end
+
+      # Documented dental visit during the period (DENTSRVD^BGPXD211, arms in
+      # its order): tracking code 0000/0190; a dental-visit CPT; exam 30; a
+      # dental-visit POV; or any other DVADA code on a visit that is not a
+      # chart review or telephone call.
+      def dental_visit_documented?(period)
+        dental_codes_in(period).any? { |p| Terminology::DENTAL_VISIT_TRACKING.include?(proc_code(p)) } ||
+          cpts_in(period).any? { |p| Terminology.dental_visit_cpt?(Terminology::CPT, proc_code(p)) } ||
+          dental_exam_in?(period) ||
+          pov_in?(period, Terminology::DENTAL_VISIT_ICD10) ||
+          dental_codes_in(period).any? do |p|
+            Terminology.dental_visit_ada?(proc_code(p)) && face_to_face_visit?(p)
+          end
+      end
+
+      # Intact sealant (I10^BGPXD3, BGPN7): a sealant code or CPT during the
+      # period, or tracking code 0007 in the 1,096 days ending at period end
+      # (SEALDEV^BGPXD3A over $$FMADD^XLFDT(BGPEDATE,-1096)).
+      def intact_sealant?(period)
+        dental_codes_in(period).any? { |p| Terminology::SEALANT_DENTAL.include?(proc_code(p)) } ||
+          cpts_in(period).any? { |p| Terminology::SEALANT_CPTS.include?(proc_code(p)) } ||
+          dental_codes_in((period.end - 1096)..period.end).any? { |p| proc_code(p) == Terminology::SEALANT_TRACKING }
+      end
+
+      # One or more topical fluoride applications during the period
+      # (TF^BGPXD3A): fluoride dental code, fluoride CPT, or fluoride POV.
+      def topical_fluoride?(period)
+        dental_codes_in(period).any? { |p| Terminology::TOPICAL_FLUORIDE_DENTAL.include?(proc_code(p)) } ||
+          cpts_in(period).any? { |p| Terminology::TOPICAL_FLUORIDE_CPTS.include?(proc_code(p)) } ||
+          pov_in?(period, Terminology::TOPICAL_FLUORIDE_ICD10)
+      end
+
       private
+
+      # V DENTAL facts (fhir-mapping.md) dated within +window+.
+      def dental_codes_in(window)
+        procedures_in(window, Terminology::RPMS_DENTAL_SYSTEM)
+      end
+
+      # CPT facts dated within +window+. The system is checked: an RPMS
+      # Dental/ADA "D2391" is not a CPT, and the chart-review rule depends on
+      # telling them apart.
+      def cpts_in(window)
+        procedures_in(window, Terminology::CPT)
+      end
+
+      def procedures_in(window, system)
+        procedures.select do |p|
+          p.dig("code", "coding", 0, "system") == system &&
+            (d = parse_date(p["performedDateTime"])) && window.cover?(d)
+        end
+      end
+
+      def proc_code(procedure)
+        procedure.dig("code", "coding", 0, "code")
+      end
+
+      def dental_exam_in?(period)
+        observations.any? do |o|
+          obs_code(o) == [ Terminology::PCC_EXAM_SYSTEM, Terminology::DENTAL_EXAM_CODE ] &&
+            (d = obs_date(o)) && period.cover?(d)
+        end
+      end
+
+      def pov_in?(period, codes)
+        povs.any? do |c|
+          Array(c.dig("code", "coding")).any? do |coding|
+            coding["system"] == Terminology::ICD10 && codes.include?(coding["code"])
+          end && (d = condition_date(c)) && period.cover?(d)
+        end
+      end
+
+      # DENTSRVD^BGPXD211 skips chart reviews (C) and telephone calls (T).
+      # Fails closed: a dental fact whose visit cannot be found does not count
+      # through this arm (dental.md, engine gaps).
+      def face_to_face_visit?(procedure)
+        ref = procedure.dig("encounter", "reference").to_s.split("/").last
+        encounter = encounters.find { |e| e["id"] == ref }
+        return false unless encounter
+
+        !(encounter.dig("class", "system") == Terminology::SERVICE_CATEGORY_SYSTEM &&
+          %w[C T].include?(encounter.dig("class", "code")))
+      end
 
       def screened_by_measurement?(period)
         observations.any? do |o|
