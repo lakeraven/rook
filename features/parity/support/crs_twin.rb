@@ -17,10 +17,11 @@ require "English"
 #   ROOK_CRS_TWIN_R     routine source directory (default /data/r)
 #
 # The client runs M under a UTF-8 YottaDB environment with a writable object
-# directory so routines auto-compile on first link. It offers probe-grade
-# direct-mode evaluation plus routine installation (for the FileMan seeding
-# layer, which needs real programs, not stdin fragments). An M error in the
-# output raises — a failed evaluation must never read as a successful probe.
+# directory so stock routines auto-compile on first link. It offers
+# direct-mode evaluation only: it cannot install a routine, because the
+# harness authors no M (the seeder drives stock entry points). An M error in
+# the output raises — a failed evaluation must never read as a successful
+# probe.
 module ParityHarness
   class CrsTwin
     class Unavailable < StandardError; end
@@ -55,9 +56,9 @@ module ParityHarness
       script = <<~SH
         set -eu
         D=$(dirname $(readlink -f /usr/local/bin/yottadb))
-        mkdir -p /tmp/rook-parity /tmp/rook-parity-o
+        mkdir -p /tmp/rook-parity-o
         export ydb_chset=UTF-8 ydb_gbldir=#{Shellwords.escape(@gld)}
-        export ydb_routines="/tmp/rook-parity-o(/tmp/rook-parity #{Shellwords.escape(@routines)}) $D/utf8/libyottadbutil.so"
+        export ydb_routines="/tmp/rook-parity-o(#{Shellwords.escape(@routines)}) $D/utf8/libyottadbutil.so"
         printf '%s\\nHALT\\n' #{Shellwords.escape(m_input)} | yottadb -dir 2>&1
       SH
       lines = run_shell(script).lines.map(&:chomp).reject { |l| l.empty? || l.start_with?("YDB>") }
@@ -67,24 +68,7 @@ module ParityHarness
       lines
     end
 
-    # Installs an M routine source into the twin's harness routine directory
-    # (base64 through the shell — no stdin dependence on the exec prefix).
-    # Stale objects are removed so the next link recompiles.
-    def install_routine(name, source)
-      raise ArgumentError, "invalid M routine name #{name.inspect}" unless name.match?(/\A[A-Z][A-Z0-9]{0,7}\z/)
-
-      encoded = [ source ].pack("m0")
-      run_shell(<<~SH)
-        set -eu
-        mkdir -p /tmp/rook-parity /tmp/rook-parity-o
-        printf '%s' #{Shellwords.escape(encoded)} | base64 -d > /tmp/rook-parity/#{name}.m
-        rm -f /tmp/rook-parity-o/#{name}.o
-      SH
-      name
-    end
-
-    # Runs `D <entry>` (e.g. "^ROOKSEED" or "PT^ROOKSEED(...)") — installed
-    # routines resolve from the harness routine directory.
+    # Runs `D <entry>` for a stock entry point (e.g. "^XUP").
     def run_entry(entry, allow_errors: false)
       run_direct("D #{entry}", allow_errors: allow_errors)
     end
